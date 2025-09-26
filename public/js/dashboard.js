@@ -654,116 +654,275 @@ async function speakText(text) {
         // First, check if the API endpoint is reachable
         const healthResponse = await fetch(`${API_BASE_URL}/api/health`, {
             method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            // Add timeout for health check to prevent hanging
+            signal: AbortSignal.timeout(10000) // 10 second timeout
         });
         
         if (!healthResponse.ok) {
-            throw new Error('API health check failed');
+            throw new Error(`API health check failed with status: ${healthResponse.status}`);
         }
         
         const healthData = await healthResponse.json();
         console.log('🏥 API Health:', healthData);
         
+        // Enhanced validation - check all required configurations
         if (!healthData.elevenlabs_configured) {
-            throw new Error('ElevenLabs not configured on server');
+            throw new Error('ElevenLabs API key not configured on server');
         }
         
-        // Now attempt the TTS request
+        // Check voice ID if available in health response
+        if (healthData.hasOwnProperty('voice_id_configured') && !healthData.voice_id_configured) {
+            throw new Error('ElevenLabs Voice ID not configured on server');
+        }
+        
+        // Check connection status if available in health response
+        if (healthData.hasOwnProperty('elevenlabs_connection') && !healthData.elevenlabs_connection) {
+            throw new Error('ElevenLabs API connection failed on server');
+        }
+        
+        // Now attempt the TTS request with extended timeout
         const response = await fetch(`${API_BASE_URL}/api/speak`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
                 'Accept': 'audio/mpeg'
             },
-            body: JSON.stringify({ text })
+            body: JSON.stringify({ text }),
+            // Extended timeout for TTS request (ElevenLabs can be slow)
+            signal: AbortSignal.timeout(45000) // 45 second timeout
         });
         
         console.log('📡 ElevenLabs API Response Status:', response.status);
         console.log('📡 Response Headers:', Object.fromEntries(response.headers.entries()));
         
         if (!response.ok) {
-            const errorText = await response.text();
+            let errorText;
+            const contentType = response.headers.get('content-type');
+            
+            try {
+                // Try to parse error response properly
+                if (contentType && contentType.includes('application/json')) {
+                    const errorData = await response.json();
+                    errorText = errorData.detail || errorData.message || JSON.stringify(errorData);
+                } else {
+                    errorText = await response.text();
+                }
+            } catch (parseError) {
+                errorText = `Unable to parse error response (${response.status})`;
+            }
+            
             console.error('❌ ElevenLabs API Error Response:', errorText);
-            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+            
+            // Provide user-friendly error messages based on status codes
+            let friendlyError;
+            switch (response.status) {
+                case 401:
+                    friendlyError = 'ElevenLabs authentication failed - check API key';
+                    break;
+                case 429:
+                    friendlyError = 'ElevenLabs rate limit exceeded - please try again later';
+                    break;
+                case 500:
+                    friendlyError = 'Server error with ElevenLabs integration';
+                    break;
+                case 502:
+                    friendlyError = 'ElevenLabs service temporarily unavailable';
+                    break;
+                case 504:
+                    friendlyError = 'ElevenLabs request timed out';
+                    break;
+                default:
+                    friendlyError = `ElevenLabs error (${response.status}): ${errorText}`;
+            }
+            
+            throw new Error(friendlyError);
         }
         
         // Check if response is actually audio
         const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('audio')) {
+        if (!contentType || (!contentType.includes('audio') && !contentType.includes('mpeg'))) {
             console.error('❌ Invalid content type:', contentType);
-            throw new Error('Invalid audio response from server');
+            throw new Error(`Invalid content type from server: ${contentType || 'unknown'}`);
         }
         
         const audioBlob = await response.blob();
         console.log('🎵 Audio blob size:', audioBlob.size, 'bytes');
+        console.log('🎵 Audio blob type:', audioBlob.type);
         
         if (audioBlob.size === 0) {
             throw new Error('Empty audio response from ElevenLabs');
+        }
+        
+        // Warn about unusually small audio responses
+        if (audioBlob.size < 1000) {
+            console.warn('⚠️ Unusually small audio response:', audioBlob.size, 'bytes - may indicate an error');
         }
         
         // Create and play audio
         const audioUrl = URL.createObjectURL(audioBlob);
         const audio = new Audio(audioUrl);
         
+        // Set audio properties for better playback
+        audio.preload = 'auto';
+        audio.volume = 1.0;
+        
         // Return a promise that resolves when audio finishes
         return new Promise((resolve, reject) => {
-            audio.onended = () => {
-                URL.revokeObjectURL(audioUrl);
-                console.log('✅ ElevenLabs audio completed successfully');
-                resolve();
+            let isResolved = false;
+            
+            // Safe cleanup function to prevent memory leaks
+            const cleanup = () => {
+                if (!isResolved) {
+                    URL.revokeObjectURL(audioUrl);
+                    isResolved = true;
+                }
             };
+            
+            const safeResolve = () => {
+                if (!isResolved) {
+                    cleanup();
+                    console.log('✅ ElevenLabs audio completed successfully');
+                    resolve();
+                }
+            };
+            
+            const safeReject = (error) => {
+                if (!isResolved) {
+                    cleanup();
+                    reject(error);
+                }
+            };
+            
+            audio.onended = safeResolve;
             
             audio.onerror = (e) => {
                 console.error('❌ Audio playback error:', e);
-                URL.revokeObjectURL(audioUrl);
-                reject(new Error('Audio playback failed'));
+                console.error('Audio error details:', {
+                    error: e.error,
+                    message: e.message,
+                    audioReadyState: audio.readyState,
+                    audioNetworkState: audio.networkState
+                });
+                safeReject(new Error('Audio playback failed'));
             };
             
             audio.oncanplaythrough = () => {
                 console.log('🎵 Audio ready to play');
             };
             
+            // Additional audio event listeners for better debugging
+            audio.onloadstart = () => {
+                console.log('🎵 Audio loading started');
+            };
+            
+            audio.onloadeddata = () => {
+                console.log('🎵 Audio data loaded');
+            };
+            
+            // Add safety timeout to prevent hanging (60 seconds max)
+            const playbackTimeout = setTimeout(() => {
+                console.warn('⏰ Audio playback timeout - forcing completion');
+                audio.pause();
+                safeResolve();
+            }, 60000);
+            
+            // Clear timeout when audio ends normally
+            const originalOnended = audio.onended;
+            audio.onended = () => {
+                clearTimeout(playbackTimeout);
+                originalOnended();
+            };
+            
             // Start playing
             audio.play().then(() => {
                 console.log('✅ ElevenLabs audio started playing');
-            }).catch(reject);
+            }).catch((playError) => {
+                console.error('❌ Audio play() failed:', playError);
+                clearTimeout(playbackTimeout);
+                
+                // Handle specific play() errors
+                if (playError.name === 'NotAllowedError') {
+                    safeReject(new Error('Audio playback blocked - user interaction required'));
+                } else if (playError.name === 'NotSupportedError') {
+                    safeReject(new Error('Audio format not supported by browser'));
+                } else {
+                    safeReject(new Error(`Audio playback failed: ${playError.message}`));
+                }
+            });
         });
         
     } catch (error) {
+        // Enhanced error logging for debugging
         console.warn('❌ ElevenLabs failed, using browser TTS fallback:', error.message);
+        console.warn('Error details:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack?.split('\n')[0] // Just first line of stack
+        });
         
-        // Fallback to browser TTS
+        // Fallback to browser TTS with all your original features
         return new Promise((resolve) => {
             if ('speechSynthesis' in window) {
-                // Cancel any ongoing speech
-                speechSynthesis.cancel();
-                
-                const utterance = new SpeechSynthesisUtterance(text);
-                const lang = getCurrentLanguage();
-                utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-US';
-                utterance.rate = 0.9;
-                utterance.pitch = 1.0;
-                utterance.volume = 1.0;
-                
-                utterance.onend = () => {
-                    console.log('🔄 Browser TTS completed');
-                    resolve();
-                };
-                
-                utterance.onerror = (e) => {
-                    console.error('❌ Browser TTS error:', e);
+                try {
+                    // Cancel any ongoing speech
+                    speechSynthesis.cancel();
+                    
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    const lang = getCurrentLanguage(); // Your language detection function
+                    utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-US';
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1.0;
+                    utterance.volume = 1.0;
+                    
+                    let isCompleted = false;
+                    
+                    utterance.onend = () => {
+                        if (!isCompleted) {
+                            isCompleted = true;
+                            console.log('🔄 Browser TTS completed');
+                            resolve();
+                        }
+                    };
+                    
+                    utterance.onerror = (e) => {
+                        console.error('❌ Browser TTS error:', e);
+                        if (!isCompleted) {
+                            isCompleted = true;
+                            resolve(); // Still resolve to prevent hanging
+                        }
+                    };
+                    
+                    // Add onstart event for better tracking
+                    utterance.onstart = () => {
+                        console.log('🔄 Browser TTS started');
+                    };
+                    
+                    // Safety timeout for browser TTS
+                    setTimeout(() => {
+                        if (!isCompleted) {
+                            console.warn('⏰ Browser TTS timeout - forcing completion');
+                            speechSynthesis.cancel();
+                            isCompleted = true;
+                            resolve();
+                        }
+                    }, 30000); // 30 seconds timeout
+                    
+                    speechSynthesis.speak(utterance);
+                    console.log('🔄 Using browser TTS as fallback');
+                    
+                } catch (ttsError) {
+                    console.error('❌ Browser TTS setup failed:', ttsError);
                     resolve(); // Still resolve to prevent hanging
-                };
-                
-                speechSynthesis.speak(utterance);
-                console.log('🔄 Using browser TTS as fallback');
+                }
             } else {
-                console.warn('❌ No TTS available');
+                console.warn('❌ No TTS available (speechSynthesis not supported)');
                 resolve();
             }
         });
     }
 }
+
 
 
 async function handleUserMessage(userMessage) {

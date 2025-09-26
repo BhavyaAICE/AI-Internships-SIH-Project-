@@ -74,8 +74,10 @@ async def speak_text(request: SpeakRequest):
     api_key = os.getenv("ELEVENLABS_API_KEY")
     voice_id = os.getenv("ELEVEN_VOICE_ID")
 
-    if not api_key or not voice_id:
-        raise HTTPException(status_code=500, detail="ElevenLabs credentials not configured")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="ElevenLabs API key not configured")
+    if not voice_id:
+        raise HTTPException(status_code=500, detail="ElevenLabs Voice ID not configured")
 
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
     headers = {
@@ -89,16 +91,22 @@ async def speak_text(request: SpeakRequest):
         "voice_settings": {"stability": 0.5, "similarity_boost": 0.8}
     }
 
+    # Initialize response BEFORE try block
+    response = None
+    
     try:
         print(f"🗣️ Requesting TTS from ElevenLabs for: {text[:50]}...")
         
-        # Make the API call to ElevenLabs
         response = requests.post(url, json=data, headers=headers, timeout=30)
         
-        # This will automatically raise an exception for API errors (like 401, 422, etc.)
-        response.raise_for_status()
-        
-        # If we get here, the request was successful (status code 2xx)
+        # Check for specific error conditions
+        if response.status_code == 401:
+            raise HTTPException(status_code=500, detail="ElevenLabs API authentication failed")
+        elif response.status_code == 422:
+            raise HTTPException(status_code=500, detail="Invalid request to ElevenLabs API")
+        elif not response.ok:
+            raise HTTPException(status_code=502, detail=f"ElevenLabs API error: {response.status_code}")
+
         print("✅ ElevenLabs TTS successful")
         return Response(
             content=response.content,
@@ -106,29 +114,26 @@ async def speak_text(request: SpeakRequest):
         )
 
     except requests.exceptions.Timeout:
-        # This handles a specific network timeout
         print("❌ ElevenLabs API timeout")
         raise HTTPException(status_code=504, detail="Text-to-speech service timeout")
 
-    except requests.exceptions.HTTPError as e:
-        # This catches errors returned by the ElevenLabs API (like an invalid API key)
-        # The 'response' object is safely available here as e.response
-        print(f"❌ ElevenLabs API HTTP error: {e.response.status_code}")
-        print(f"Response Body: {e.response.text}")
-        raise HTTPException(status_code=502, detail=f"ElevenLabs API Error: {e.response.text}")
+    except requests.exceptions.ConnectionError:
+        print("❌ ElevenLabs connection error")
+        raise HTTPException(status_code=502, detail="Cannot connect to text-to-speech service")
 
     except requests.exceptions.RequestException as e:
-        # This catches fundamental network errors (DNS failure, connection refused, etc.)
-        # In this block, 'response' does NOT exist, and we don't try to access it.
         print(f"❌ ElevenLabs network request failed: {e}")
         raise HTTPException(status_code=502, detail="Text-to-speech service unavailable")
 
+    except HTTPException:
+        # Re-raise HTTPException as-is
+        raise
+        
     except Exception as e:
-        # A final catch-all for any other unexpected errors
         print(f"❌ An unexpected error occurred in TTS: {e}")
-        raise HTTPException(status_code=500, detail="An unexpected text-to-speech error occurred.")
-    
-    
+        raise HTTPException(status_code=500, detail="An unexpected text-to-speech error occurred")
+
+
 @app.get("/")
 def read_root():
     return {"message": "PM Internship API with ElevenLabs TTS is running!"}
@@ -138,10 +143,13 @@ def serve_frontend():
 
 @app.get("/api/health")
 def health_check():
+    api_key_configured = bool(os.getenv("ELEVENLABS_API_KEY"))
+    voice_id_configured = bool(os.getenv("ELEVEN_VOICE_ID"))
+    
     return {
         "status": "healthy",
-        "elevenlabs_configured": bool(os.getenv("ELEVENLABS_API_KEY")),
-        "voice_id_configured": bool(os.getenv("ELEVEN_VOICE_ID")),
+        "elevenlabs_configured": api_key_configured,
+        "voice_id_configured": voice_id_configured,
         "cors_enabled": True,
         "allowed_origins": origins
     }
