@@ -6,3 +6,4 @@ requests
 rapidfuzz
 python-multipart
 gunicorn
+httpx

@@ -5,9 +5,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Dict, Any
 import os
-import requests
 import logging
 from contextlib import asynccontextmanager
+import httpx
 
 # Setup logging
 logging.basicConfig(
@@ -20,23 +20,20 @@ logger = logging.getLogger(__name__)
 from dotenv import load_dotenv
 load_dotenv()
 
-# Lifespan context for startup/shutdown events
+# Lifespan context
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("🚀 Starting PM Internship Recommendation API with ElevenLabs TTS")
-    # Test ElevenLabs credentials on startup
     api_key = os.getenv("ELEVENLABS_API_KEY")
     voice_id = os.getenv("ELEVEN_VOICE_ID")
-
     if api_key and voice_id:
         try:
-            test_url = "https://api.elevenlabs.io/v1/voices"
-            test_headers = {"xi-api-key": api_key}
-            test_response = requests.get(test_url, headers=test_headers, timeout=10)
-            if test_response.status_code == 200:
-                logger.info("✅ ElevenLabs API connection successful")
-            else:
-                logger.warning(f"⚠️ ElevenLabs API test failed: {test_response.status_code}")
+            async with httpx.AsyncClient(timeout=10) as client:
+                r = await client.get("https://api.elevenlabs.io/v1/voices", headers={"xi-api-key": api_key})
+                if r.status_code == 200:
+                    logger.info("✅ ElevenLabs API connection successful")
+                else:
+                    logger.warning(f"⚠️ ElevenLabs API test failed: {r.status_code}")
         except Exception as e:
             logger.warning(f"⚠️ ElevenLabs connection test failed: {str(e)}")
     else:
@@ -51,7 +48,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS Configuration
+# CORS
 origins = [
     "https://ai-internships-sih-project-nib5.vercel.app",
     "https://ai-internships-sih-project-nib5-qkstzkxak.vercel.app",
@@ -91,7 +88,7 @@ except Exception as e:
 
 # ElevenLabs credentials
 ELEVEN_API_KEY = os.getenv("ELEVENLABS_API_KEY")
-ELEVEN_VOICE_ID = os.getenv("ELEVEN_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")  # Default Rachel voice
+ELEVEN_VOICE_ID = os.getenv("ELEVEN_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")  # default Rachel
 
 # Models
 class Candidate(BaseModel):
@@ -116,7 +113,6 @@ class HealthResponse(BaseModel):
     internships_loaded: int
 
 # Endpoints
-
 @app.get("/")
 def read_root():
     return {
@@ -136,16 +132,9 @@ def health_check():
     connection_status = False
     if api_key_configured and voice_id_configured:
         try:
-            test_url = "https://api.elevenlabs.io/v1/voices"
-            test_headers = {"xi-api-key": ELEVEN_API_KEY}
-            test_response = requests.get(test_url, headers=test_headers, timeout=5)
-            connection_status = test_response.status_code == 200
-            if connection_status:
-                logger.info("✅ ElevenLabs health check passed")
-            else:
-                logger.warning(f"⚠️ ElevenLabs health check failed: {test_response.status_code}")
-        except Exception as e:
-            logger.warning(f"⚠️ ElevenLabs health check exception: {str(e)}")
+            r = httpx.get("https://api.elevenlabs.io/v1/voices", headers={"xi-api-key": ELEVEN_API_KEY}, timeout=5)
+            connection_status = r.status_code == 200
+        except:
             connection_status = False
     return HealthResponse(
         status="healthy",
@@ -171,7 +160,6 @@ def recommend_endpoint(candidate: Candidate, min_score: float = 0.0, remote_only
             min_score=min_score,
             filters=filters
         )
-        logger.info(f"✅ Found {len(results)} recommendations")
         return JSONResponse({
             "count": len(results),
             "recommendations": results[:10],
@@ -189,13 +177,8 @@ async def speak_text(request: SpeakRequest):
         raise HTTPException(status_code=400, detail="Text is required and cannot be empty")
     if len(text) > 5000:
         raise HTTPException(status_code=400, detail="Text too long (max 5000 characters)")
-
-    if not ELEVEN_API_KEY:
-        logger.error("❌ ElevenLabs API key not configured")
-        raise HTTPException(status_code=500, detail="ElevenLabs API key not configured")
-    if not ELEVEN_VOICE_ID:
-        logger.error("❌ ElevenLabs Voice ID not configured")
-        raise HTTPException(status_code=500, detail="ElevenLabs Voice ID not configured")
+    if not ELEVEN_API_KEY or not ELEVEN_VOICE_ID:
+        raise HTTPException(status_code=500, detail="ElevenLabs credentials not configured")
 
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVEN_VOICE_ID}"
     headers = {
@@ -214,102 +197,48 @@ async def speak_text(request: SpeakRequest):
         }
     }
 
-    response = None
     try:
-        logger.info(f"🗣️ TTS request: {text[:50]}{'...' if len(text) > 50 else ''}")
-        response = requests.post(
-            url,
-            json=data,
-            headers=headers,
-            timeout=30,
-            stream=True
-        )
-        logger.info(f"📡 ElevenLabs Response: {response.status_code}")
-
-        if response.status_code == 401:
-            logger.error("❌ ElevenLabs authentication failed")
-            raise HTTPException(status_code=500, detail="ElevenLabs API authentication failed - check API key")
-        elif response.status_code == 422:
-            logger.error("❌ ElevenLabs validation error")
-            error_detail = "Invalid request to ElevenLabs API"
-            try:
-                error_response = response.json()
-                if 'detail' in error_response:
-                    error_detail = str(error_response['detail'])[:200]
-            except:
-                pass
-            raise HTTPException(status_code=500, detail=f"ElevenLabs validation error: {error_detail}")
-        elif response.status_code == 429:
-            logger.error("❌ ElevenLabs rate limit exceeded")
-            raise HTTPException(status_code=429, detail="ElevenLabs API rate limit exceeded - please try again later")
-        elif response.status_code >= 500:
-            logger.error(f"❌ ElevenLabs server error: {response.status_code}")
-            raise HTTPException(status_code=502, detail="ElevenLabs service is temporarily unavailable")
-        elif not response.ok:
-            logger.error(f"❌ ElevenLabs HTTP error: {response.status_code}")
-            try:
-                error_text = response.text[:200]
-                logger.error(f"Response body: {error_text}")
-            except:
-                error_text = "Unknown error"
-            raise HTTPException(status_code=502, detail=f"ElevenLabs API error (HTTP {response.status_code})")
-
-        content_type = response.headers.get('content-type', '')
-        if 'audio' not in content_type.lower():
-            logger.error(f"❌ Invalid content type: {content_type}")
-            raise HTTPException(status_code=502, detail="Invalid audio response from ElevenLabs")
-
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(url, json=data, headers=headers)
+        if response.status_code != 200:
+            logger.error(f"❌ ElevenLabs API error {response.status_code}: {response.text[:200]}")
+            raise HTTPException(status_code=502, detail=f"ElevenLabs API error {response.status_code}")
         audio_content = response.content
-        if len(audio_content) == 0:
-            logger.error("❌ Empty audio response from ElevenLabs")
+        if not audio_content:
             raise HTTPException(status_code=502, detail="Empty audio response from ElevenLabs")
-
-        logger.info(f"✅ TTS successful: {len(audio_content)} bytes")
-
         return Response(
             content=audio_content,
             media_type="audio/mpeg",
             headers={
                 "Cache-Control": "public, max-age=3600",
-                "Content-Length": str(len(audio_content))
+                "Content-Length": str(len(audio_content)),
+                "Accept-Ranges": "bytes"
             }
         )
-    except requests.exceptions.Timeout:
-        logger.error("❌ ElevenLabs API timeout")
-        raise HTTPException(status_code=504, detail="Text-to-speech request timeout - please try again")
-    except requests.exceptions.ConnectionError:
-        logger.error("❌ ElevenLabs connection error")
-        raise HTTPException(status_code=502, detail="Cannot connect to text-to-speech service")
-    except requests.exceptions.RequestException as e:
-        logger.error(f"❌ ElevenLabs network error: {str(e)}")
-        raise HTTPException(status_code=502, detail="Text-to-speech service temporarily unavailable")
+    except httpx.RequestError as e:
+        logger.error(f"❌ ElevenLabs request error: {str(e)}")
+        raise HTTPException(status_code=502, detail="Cannot connect to ElevenLabs TTS service")
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ Unexpected TTS error: {str(e)}")
-        raise HTTPException(status_code=500, detail="An unexpected error occurred in text-to-speech service")
+        logger.error(f"❌ Unexpected ElevenLabs error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Unexpected error in text-to-speech service")
 
+# Voice input processing
 @app.post("/api/process-voice-input")
 def process_voice_input(audio_data: Dict[str, Any]):
     try:
         text = audio_data.get("text", "")
         if not text:
             raise HTTPException(status_code=400, detail="No text provided in audio data")
-
-        logger.info(f"🎤 Processing voice input: {text[:50]}...")
-
         candidate_profile = parse_voice_to_profile(text)
-
         recommendations = recommend(candidate_profile, INTERNSHIPS, min_score=20.0)
-        logger.info(f"✅ Voice processing complete: {len(recommendations)} recommendations")
-
         return JSONResponse({
             "candidate_profile": candidate_profile,
             "recommendations": recommendations[:5],
             "success": True,
             "message": "Voice input processed successfully"
         })
-
     except Exception as e:
         logger.error(f"❌ Voice processing error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Voice processing error: {str(e)}")
@@ -325,53 +254,40 @@ def parse_voice_to_profile(text: str) -> Dict:
         "is_fresher": True
     }
     text_lower = text.lower()
+    skills_keywords = ["python","java","javascript","react","node","nodejs","html","css","data","analytics","sql","excel","powerbi","tableau","marketing","digital marketing","content","writing","seo","design","graphic design","photoshop","illustrator","research","analysis","statistics","machine learning","ai","finance","accounting","economics"]
+    profile["skills"] = [s for s in skills_keywords if s in text_lower][:5]
 
-    skills_keywords = [
-        "python", "java", "javascript", "react", "node", "nodejs", "html", "css",
-        "data", "analytics", "sql", "excel", "powerbi", "tableau",
-        "marketing", "digital marketing", "content", "writing", "seo",
-        "design", "graphic design", "photoshop", "illustrator",
-        "research", "analysis", "statistics", "machine learning", "ai",
-        "finance", "accounting", "economics"
-    ]
-    profile["skills"] = [skill for skill in skills_keywords if skill in text_lower][:5]
+    sectors = {
+        "it": ["software","development","coding","programming","tech"],
+        "marketing": ["marketing","content","social media","advertising"],
+        "analytics": ["data","analytics","statistics","analysis"],
+        "finance": ["finance","accounting","economics","banking"],
+        "design": ["design","creative","graphics","ui","ux"],
+        "research": ["research","academic","study","investigation"]
+    }
+    for sector, keywords in sectors.items():
+        if any(word in text_lower for word in keywords):
+            profile["sector_interest"].append(sector)
 
-    if any(word in text_lower for word in ["software", "development", "coding", "programming", "tech"]):
-        profile["sector_interest"].append("it")
-    if any(word in text_lower for word in ["marketing", "content", "social media", "advertising"]):
-        profile["sector_interest"].append("marketing")
-    if any(word in text_lower for word in ["data", "analytics", "statistics", "analysis"]):
-        profile["sector_interest"].append("analytics")
-    if any(word in text_lower for word in ["finance", "accounting", "economics", "banking"]):
-        profile["sector_interest"].append("finance")
-    if any(word in text_lower for word in ["design", "creative", "graphics", "ui", "ux"]):
-        profile["sector_interest"].append("design")
-    if any(word in text_lower for word in ["research", "academic", "study", "investigation"]):
-        profile["sector_interest"].append("research")
-
-    locations = ["delhi", "mumbai", "bangalore", "chennai", "hyderabad", "pune", "kolkata", "ahmedabad", "remote"]
+    locations = ["delhi","mumbai","bangalore","chennai","hyderabad","pune","kolkata","ahmedabad","remote"]
     profile["location_preference"] = [loc for loc in locations if loc in text_lower][:3]
-
     if "remote" in text_lower:
         profile["prefers_remote"] = True
-
-    if any(word in text_lower for word in ["experienced", "experience", "worked", "professional"]):
+    if any(word in text_lower for word in ["experienced","experience","worked","professional"]):
         profile["is_fresher"] = False
 
     education_keywords = {
-        "engineering": ["engineering", "engineer", "btech", "beng", "mtech"],
-        "commerce": ["commerce", "bcom", "mcom", "accounting", "finance"],
-        "science": ["science", "bsc", "msc", "physics", "chemistry", "biology"],
-        "arts": ["arts", "ba", "ma", "humanities", "literature"],
-        "management": ["mba", "management", "business", "administration"],
-        "computer science": ["computer science", "cs", "it", "information technology"]
+        "engineering": ["engineering","engineer","btech","beng","mtech"],
+        "commerce": ["commerce","bcom","mcom","accounting","finance"],
+        "science": ["science","bsc","msc","physics","chemistry","biology"],
+        "arts": ["arts","ba","ma","humanities","literature"],
+        "management": ["mba","management","business","administration"],
+        "computer science": ["computer science","cs","it","information technology"]
     }
-
     for edu_type, keywords in education_keywords.items():
-        if any(keyword in text_lower for keyword in keywords):
+        if any(k in text_lower for k in keywords):
             profile["academic_background"] = edu_type
             break
-
     return profile
 
 @app.exception_handler(Exception)
@@ -391,4 +307,3 @@ def serve_dashboard():
 
 # Export for Vercel
 app_handler = app
-
