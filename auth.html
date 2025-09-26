@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In / Register - PM Internship Recommendation Portal</title>
+    <meta name="description" content="Sign in or register for the PM Internship Recommendation Portal to discover personalized internship opportunities.">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/auth.css">
+    <!-- Add these scripts to your HTML file -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-analytics.js"></script>
+    <script type="module" src="auth.js" defer></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-container">
+                <div class="logo">
+                    <a href="index.html">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="logo-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        <span>PM Internship Portal</span>
+                    </a>
+                </div>
+                <div class="header-controls">
+                    <div class="language-toggle">
+                        <button onclick="toggleLanguage('en')" class="lang-btn active" id="lang-en">English</button>
+                        <button onclick="toggleLanguage('hi')" class="lang-btn" id="lang-hi">हिंदी</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Auth Section -->
+    <main class="auth-main">
+        <div class="container">
+            <div class="auth-container">
+                <div class="auth-header">
+                    <h1 id="auth-title">Welcome Back</h1>
+                    <p id="auth-subtitle">Sign in to access your personalized recommendations</p>
+                </div>
+
+                <!-- Tab Navigation -->
+                <div class="auth-tabs">
+                    <button class="tab-btn active" onclick="showTab('signin')" id="signin-tab">Sign In</button>
+                    <button class="tab-btn" onclick="showTab('register')" id="register-tab">Register</button>
+                </div>
+
+                <!-- Sign In Form -->
+                <div class="auth-form active" id="signin-form">
+                    <form onsubmit="handleSignIn(event)">
+                        <div class="form-group">
+                            <label for="signin-email" id="signin-email-label">Email or Phone Number</label>
+                            <input type="text" id="signin-email" name="email" required 
+                                   placeholder="Enter your email or phone number"
+                                   aria-describedby="signin-email-help">
+                            <div class="form-help" id="signin-email-help">
+                                Enter the email or phone number you used during registration
+                            </div>
+                            <div class="form-error" id="signin-email-error" role="alert" aria-live="polite"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="signin-password" id="signin-password-label">Password</label>
+                            <input type="password" id="signin-password" name="password" required 
+                                   placeholder="Enter your password"
+                                   aria-describedby="signin-password-help">
+                            <div class="form-help" id="signin-password-help">
+                                Enter your account password
+                            </div>
+                            <div class="form-error" id="signin-password-error" role="alert" aria-live="polite"></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-full" id="signin-btn">
+                            <span class="btn-text" style="color: #ffffff;">Sign In</span>
+                            <div class="btn-loading" style="display: none;">
+                                <div class="spinner"></div>
+                                <span style="color: #ffffff;">Signing In...</span>
+                            </div>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Register Form -->
+                <div class="auth-form" id="register-form">
+                    <form onsubmit="handleRegister(event)">
+                        <div class="form-group">
+                            <label for="register-name" id="register-name-label">Full Name</label>
+                            <input type="text" id="register-name" name="name" required 
+                                   placeholder="Enter your full name"
+                                   aria-describedby="register-name-help">
+                            <div class="form-help" id="register-name-help">
+                                Enter your name as it appears in official documents
+                            </div>
+                            <div class="form-error" id="register-name-error" role="alert" aria-live="polite"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="register-email" id="mail">Email Address</label>
+                            <input type="email" id="mail" name="email" required 
+                                   placeholder="Enter your email address"
+                                   aria-describedby="register-email-help">
+                            <div class="form-help" id="register-email-help">
+                                We'll send important updates to this email
+                            </div>
+                            <div class="form-error" id="register-email-error" role="alert" aria-live="polite"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="register-phone" id="register-phone-label">Phone Number</label>
+                            <input type="tel" id="register-phone" name="phone" required 
+                                   placeholder="Enter your 10-digit phone number"
+                                   pattern="[0-9]{10}"
+                                   aria-describedby="register-phone-help">
+                            <div class="form-help" id="register-phone-help">
+                                Enter 10-digit mobile number without country code
+                            </div>
+                            <div class="form-error" id="register-phone-error" role="alert" aria-live="polite"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="register-password" id="password">Password</label>
+                            <input type="password" id="password" name="password" required 
+                                   placeholder="Create a strong password"
+                                   aria-describedby="register-password-help">
+                            <div class="form-help" id="register-password-help">
+                                Use at least 8 characters with a mix of letters, numbers and symbols
+                            </div>
+                            <div class="form-error" id="register-password-error" role="alert" aria-live="polite"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="register-confirm-password" id="register-confirm-password-label">Confirm Password</label>
+                            <input type="password" id="register-confirm-password" name="confirmPassword" required 
+                                   placeholder="Confirm your password"
+                                   aria-describedby="register-confirm-password-help">
+                            <div class="form-help" id="register-confirm-password-help">
+                                Re-enter your password to confirm
+                            </div>
+                            <div class="form-error" id="register-confirm-password-error" role="alert" aria-live="polite"></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-full" id="submit">
+                            <span class="btn-text" style="color: #ffffff;">Create Account</span>
+                            <div class="btn-loading" style="display: none;">
+                                <div class="spinner"></div>
+                                <span style="color: #ffffff;">Creating Account...</span>
+                            </div>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Security Note -->
+                <div class="security-note">
+                    <div class="security-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                    </div>
+                    <div class="security-text">
+                        <h4 id="security-title">Secure & Official</h4>
+                        <p id="security-desc">Your data is protected and this is an official government portal.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4 id="footer-about-title">About Portal</h4>
+                    <p id="footer-about-desc">Official government portal for PM internship scheme recommendations.</p>
+                </div>
+                <div class="footer-section">
+                    <h4 id="footer-links-title">Quick Links</h4>
+                    <ul>
+                        <li><a href="#" id="footer-help">Help & FAQ</a></li>
+                        <li><a href="#" id="footer-privacy">Privacy Policy</a></li>
+                        <li><a href="#" id="footer-terms">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p id="footer-copyright">&copy; 2025 PM Internship Recommendation Portal. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/language.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>

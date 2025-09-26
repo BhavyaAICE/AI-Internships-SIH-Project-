@@ -1,0 +1,31 @@
+id,title,sector,required_skills,location,academic_background,is_fresher_friendly
+1,Data Analyst,IT,"python, excel, sql",Remote,"Computer Science, Mathematics",True
+2,Content Writer,Marketing,"content writing, english",Delhi,"Arts, English",True
+3,Market Researcher,Business,"market analysis, excel",Mumbai,"Commerce, Business",False
+4,Web Developer,IT,"javascript, html, css",Bangalore,"Computer Science, IT",True
+5,AI Research Intern,IT,"python, machine learning, tensorflow",Remote,"Computer Science, AI",False
+6,Backend Developer,IT,"python, django, sql",Hyderabad,"Computer Science, IT",True
+7,Financial Analyst,Finance,"excel, statistics, python",Mumbai,"Finance, Economics",False
+8,UI/UX Designer,Design,"figma, prototyping",Remote,"Design, Arts",True
+9,Cloud Engineer,IT,"python, aws, docker",Pune,"Computer Science, Cloud Computing",False
+10,SEO Specialist,Marketing,"seo, analytics, content writing",Remote,"Marketing, Business",True
+11,Cybersecurity Intern,IT,"python, networking, kali linux",Chennai,"Cybersecurity, IT",True
+12,Data Scientist,IT,"python, pandas, scikit-learn",Remote,"Computer Science, Data Science",False
+13,Mobile App Developer,IT,"java, kotlin, android",Noida,"Computer Science, IT",True
+14,Blockchain Developer,IT,"solidity, python, ethereum",Bangalore,"Computer Science, Blockchain",False
+15,HR Intern,Human Resources,"communication, excel",Delhi,"HR, Business",True
+16,Game Developer,IT,"c#, unity, python",Pune,"Computer Science, Game Development",True
+17,AI Product Manager,Business,"python, product strategy, ai tools",Remote,"Business, AI",False
+18,Full Stack Developer,IT,"python, react, node.js",Hyderabad,"Computer Science, IT",True
+19,IoT Engineer,IT,"python, arduino, sensors",Chennai,"Electronics, Computer Science",False
+20,Social Media Manager,Marketing,"social media, content creation",Remote,"Marketing, Media",True
+21,Data Engineer,IT,"python, spark, sql",Bangalore,"Computer Science, Data Engineering",False
+22,Robotics Intern,Engineering,"python, ros, c++",Delhi,"Mechanical, Robotics",True
+23,Cloud AI Engineer,IT,"python, azure, mlops",Pune,"Computer Science, Cloud AI",False
+24,Digital Marketing Intern,Marketing,"google ads, content writing",Remote,"Business, Marketing",True
+25,Research Assistant,Education,"python, statistics, research",Remote,"Mathematics, Statistics",True
+26,Machine Learning Engineer,IT,"python, pytorch, deep learning",Bangalore,"Computer Science, AI",False
+27,DevOps Engineer,IT,"python, kubernetes, ci/cd",Hyderabad,"Computer Science, IT",False
+28,Product Designer,Design,"figma, adobe xd, ui/ux",Mumbai,"Design, Arts",True
+29,AI Ethics Intern,Research,"python, ai ethics, research",Remote,"Philosophy, AI",True
+30,Software Engineer,IT,"python, java, sql",Chennai,"Computer Science, IT",True

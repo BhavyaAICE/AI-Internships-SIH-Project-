@@ -1,0 +1,356 @@
+/* Auth Main Layout */
+.auth-main {
+    min-height: calc(100vh - 120px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 0;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.auth-container {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    padding: 3rem;
+    width: 100%;
+    max-width: 480px;
+    position: relative;
+    margin: 0 auto;
+}
+
+.auth-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #2ED588, #26B574, #2ED588);
+    border-radius: 12px 12px 0 0;
+}
+
+/* Auth Header */
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-header h1 {
+    font-size: 2rem;
+    color: #1b4332;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+.auth-header p {
+    color: #6b7280;
+    font-size: 1rem;
+    margin-bottom: 0;
+}
+
+/* Tab Navigation */
+.auth-tabs {
+    display: flex;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 4px;
+    margin-bottom: 2rem;
+}
+
+.tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    color: #6b7280;
+}
+
+.tab-btn.active {
+    background: #2ED588;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(46, 213, 136, 0.2);
+}
+
+.tab-btn:hover:not(.active) {
+    background: #E8F8F0;
+    color: #2ED588;
+}
+
+/* Auth Forms */
+.auth-form {
+    display: none;
+}
+
+.auth-form.active {
+    display: block;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    color: #1b4332;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: #ffffff;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #2ED588;
+    box-shadow: 0 0 0 3px rgba(46, 213, 136, 0.1);
+}
+
+.form-group input:invalid {
+    border-color: #ef4444;
+}
+
+.form-group input:valid {
+    border-color: #22c55e;
+}
+
+/* Form Help Text */
+.form-help {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.5rem;
+    line-height: 1.4;
+}
+
+/* Form Errors */
+.form-error {
+    font-size: 0.875rem;
+    color: #ef4444;
+    margin-top: 0.5rem;
+    display: none;
+    font-weight: 500;
+}
+
+.form-error.show {
+    display: block;
+}
+
+/* Security Note */
+.security-note {
+    background: #E8F8F0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.security-icon {
+    width: 40px;
+    height: 40px;
+    background: #2ED588;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.security-icon .icon {
+    width: 20px;
+    height: 20px;
+    stroke: #ffffff;
+}
+
+.security-text h4 {
+    font-size: 1rem;
+    color: #1b4332;
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+}
+
+.security-text p {
+    font-size: 0.875rem;
+    color: #26B574;
+    margin-bottom: 0;
+    line-height: 1.4;
+}
+
+/* Button Loading States */
+.btn .btn-text {
+    display: block;
+   color: inherit;
+}
+
+.btn .btn-loading {
+    display: none;
+   color: inherit;
+}
+
+.btn.loading .btn-text {
+    display: none;
+}
+
+.btn.loading .btn-loading {
+    display: flex;
+   color: inherit;
+}
+
+.btn-primary {
+    background: #2ED588;
+    color: #ffffff;
+    border: 2px solid #2ED588;
+    font-weight: 600;
+    font-size: 1rem;
+   text-shadow: none;
+}
+
+.btn-primary:hover {
+    background: #26B574;
+    border-color: #26B574;
+    transform: translateY(-1px);
+    color: #ffffff;
+   text-shadow: none;
+}
+
+/* Ensure button text is always visible */
+.btn-primary,
+.btn-primary:focus,
+.btn-primary:active {
+    color: #ffffff !important;
+    background: #2ED588 !important;
+    border-color: #2ED588 !important;
+}
+
+.btn-primary:hover {
+    color: #ffffff !important;
+    background: #26B574 !important;
+    border-color: #26B574 !important;
+}
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .auth-main {
+        padding: 1rem 0;
+        align-items: flex-start;
+        min-height: calc(100vh - 150px);
+    }
+    
+    .auth-container {
+        padding: 2rem;
+        margin: 1rem;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+    
+    .auth-header h1 {
+        font-size: 1.75rem;
+    }
+    
+    .tab-btn {
+        padding: 0.6rem 0.8rem;
+        font-size: 0.9rem;
+    }
+    
+    .form-group input {
+        padding: 0.8rem;
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-container {
+        padding: 1.5rem;
+        margin: 0.5rem;
+    }
+    
+    .auth-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .auth-header p {
+        font-size: 0.9rem;
+    }
+    
+    .security-note {
+        padding: 0.75rem;
+        gap: 0.5rem;
+    }
+    
+    .security-icon {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .security-text h4 {
+        font-size: 0.9rem;
+    }
+    
+    .security-text p {
+        font-size: 0.8rem;
+    }
+}
+
+/* Input Validation Styles */
+.form-group.error input {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.form-group.success input {
+    border-color: #2ED588;
+    box-shadow: 0 0 0 3px rgba(46, 213, 136, 0.1);
+}
+
+/* Loading Animation */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.auth-container.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+/* Accessibility Enhancements */
+@media (prefers-reduced-motion: reduce) {
+    .tab-btn,
+    .form-group input,
+    .btn {
+        transition: none;
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .auth-container {
+        border: 2px solid #000000;
+    }
+    
+    .tab-btn.active {
+        background: #000000;
+        color: #ffffff;
+    }
+    
+    .form-group input:focus {
+        border-color: #000000;
+        box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.3);
+    }
+}

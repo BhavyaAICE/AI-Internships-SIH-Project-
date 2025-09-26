@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PM Internship Recommendation Portal - Official Government Schemes & Opportunities</title>
+    <meta name="description" content="A government portal to match students with suitable internship schemes. Sign up to discover personalized opportunities from official PM internship programs.">
+    <meta name="keywords" content="PM internship, government schemes, student opportunities, internship recommendation, official portal">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/landing.css">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "GovernmentOrganization",
+      "name": "PM Internship Recommendation Portal",
+      "url": "https://example.gov.in",
+      "logo": "https://example.gov.in/logo.png",
+      "description": "Official government portal for internship recommendations under PM schemes",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer service",
+        "availableLanguage": ["English", "Hindi"]
+      }
+    }
+    </script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-container">
+                <div class="logo">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="logo-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    <span>PM Internship Portal</span>
+                </div>
+                <div class="header-controls">
+                    <div class="language-toggle">
+                        <button onclick="toggleLanguage('en')" class="lang-btn active" id="lang-en">English</button>
+                        <button onclick="toggleLanguage('hi')" class="lang-btn" id="lang-hi">हिंदी</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1 id="hero-title">Find Your Perfect Internship</h1>
+                <p class="subtitle" id="hero-subtitle">AI-Powered Recommendations for Government Schemes & Opportunities</p>
+                <p class="description" id="hero-description">
+                    Discover personalized internship and training opportunities from official government schemes. Built for students, by the Government of India.
+                </p>
+                <div class="hero-buttons">
+                    <a href="auth.html" class="btn btn-primary" id="get-started-btn">Get Started</a>
+                    <a href="#features" class="btn btn-outline" id="learn-more-btn">Learn More</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Students collaborating on laptops, representing internship opportunities" loading="lazy">
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number" id="stat-schemes">500+</div>
+                    <div class="stat-label" id="stat-schemes-label">Active Schemes</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="stat-students">10,000+</div>
+                    <div class="stat-label" id="stat-students-label">Students Placed</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="stat-success">95%</div>
+                    <div class="stat-label" id="stat-success-label">Success Rate</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <h2 id="features-title">How It Works</h2>
+            <p class="section-subtitle" id="features-subtitle">Simple steps to find your ideal opportunity</p>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="icon-container">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </div>
+                    <h3 id="feature-1-title">Create Your Profile</h3>
+                    <p id="feature-1-desc">Register with your basic details and academic qualifications</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="icon-container">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <circle cx="11" cy="11" r="8" stroke-width="2" />
+                            <line x1="21" y1="21" x2="16.65" y2="16.65" stroke-width="2" />
+                        </svg>
+                    </div>
+                    <h3 id="feature-2-title">Get AI Recommendations</h3>
+                    <p id="feature-2-desc">Our system analyzes your profile and suggests matching opportunities</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="icon-container">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <circle cx="12" cy="8" r="6" stroke-width="2" />
+                            <path stroke-width="2" d="M8.21 13.89L6 22l6-3 6 3-2.21-8.11" />
+                        </svg>
+                    </div>
+                    <h3 id="feature-3-title">Apply Directly</h3>
+                    <p id="feature-3-desc">Apply to official government schemes with a single click</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="benefits">
+        <div class="container">
+            <h2 id="benefits-title">Why Choose This Portal?</h2>
+            <div class="benefits-grid">
+                <div class="benefit">
+                    <div class="icon-container success">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <h3 id="benefit-1-title">Official Government Schemes</h3>
+                    <p id="benefit-1-desc">All opportunities are from verified government sources</p>
+                </div>
+
+                <div class="benefit">
+                    <div class="icon-container success">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                    </div>
+                    <h3 id="benefit-2-title">Personalized Matching</h3>
+                    <p id="benefit-2-desc">AI-powered recommendations based on your qualifications</p>
+                </div>
+
+                <div class="benefit">
+                    <div class="icon-container success">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                    </div>
+                    <h3 id="benefit-3-title">Easy Application Process</h3>
+                    <p id="benefit-3-desc">Simplified application process for all schemes</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <h2 id="cta-title">Ready to Start Your Journey?</h2>
+            <p id="cta-description">Join thousands of students who have found their ideal internships through our portal.</p>
+            <a href="auth.html" class="btn btn-primary btn-large" id="cta-btn">Sign Up Now</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4 id="footer-about-title">About Portal</h4>
+                    <p id="footer-about-desc">Official government portal for PM internship scheme recommendations.</p>
+                </div>
+                <div class="footer-section">
+                    <h4 id="footer-links-title">Quick Links</h4>
+                    <ul>
+                        <li><a href="#" id="footer-help">Help & FAQ</a></li>
+                        <li><a href="#" id="footer-privacy">Privacy Policy</a></li>
+                        <li><a href="#" id="footer-terms">Terms of Service</a></li>
+                        <li><a href="#" id="footer-contact">Contact Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4 id="footer-govt-title">Government Links</h4>
+                    <ul>
+                        <li><a href="#" id="footer-official">Official PM Website</a></li>
+                        <li><a href="#" id="footer-schemes">All Government Schemes</a></li>
+                        <li><a href="#" id="footer-guidelines">Guidelines</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p id="footer-copyright">&copy; 2025 PM Internship Recommendation Portal. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/language.js"></script>
+    <script src="js/landing.js"></script>
+</body>
+</html>
