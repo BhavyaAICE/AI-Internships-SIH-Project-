@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, JSONResponse
+from fastapi.responses import Response, JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Dict, Any
 import os
@@ -12,7 +13,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+
 from .phase1_rule_based import load_internships, recommend
+
+app.mount("/static", StaticFiles(directory="public"), name="static")
 
 # Read ElevenLabs credentials
 ELEVEN_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
@@ -120,6 +124,8 @@ async def speak_text(request: SpeakRequest):
 @app.get("/")
 def read_root():
     return {"message": "PM Internship API with ElevenLabs TTS is running!"}
+def main_page():
+    return FileResponse("public/index.html")
 
 @app.get("/api/health")
 def health_check():
