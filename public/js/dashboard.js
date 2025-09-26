@@ -1,6 +1,6 @@
 // Dashboard functionality - Complete clean version
 
-const API_BASE_URL = "https://ai-internships-sih-project.onrender.com";
+const API_BASE_URL = "https://ai-internships-sih-project-nib5-ewc3eg1u5.vercel.app/api"; // Update with your actual API base URL
 
 console.log('🚀 Dashboard script loading...');
 
@@ -649,13 +649,13 @@ async function speakText(text) {
     try {
         console.log('🗣️ Speaking with ElevenLabs:', text.substring(0, 50) + '...');
         
-        const response = await fetch(`${API_BASE_URL}/api/recommend`, {
+        const response = await fetch(`${API_BASE_URL}/api/speak`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ text: text })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
         });
+
+
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
