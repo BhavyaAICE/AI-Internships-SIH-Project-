@@ -1,6 +1,6 @@
 // Dashboard functionality - Complete clean version
 
-const API_BASE_URL = "https://ai-internships-sih-project-nib5-ewc3eg1u5.vercel.app/api"; // Update with your actual API base URL
+const API_BASE_URL = "https://ai-internships-sih-project-nib5-ewc3eg1u5.vercel.app"; // Update with your actual API base URL
 
 console.log('🚀 Dashboard script loading...');
 
