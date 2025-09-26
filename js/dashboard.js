@@ -1,5 +1,7 @@
 // Dashboard functionality - Complete clean version
 
+const API_BASE_URL = "https://ai-internships-sih-project.onrender.com";
+
 console.log('🚀 Dashboard script loading...');
 
 // Sample opportunities data
@@ -463,7 +465,7 @@ async function finishConversation() {
     
     try {
         // Call recommendation API
-        const response = await fetch('http://localhost:8000/recommend', {
+        const response = await fetch(`${API_BASE_URL}/api/recommend`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -647,7 +649,7 @@ async function speakText(text) {
     try {
         console.log('🗣️ Speaking with ElevenLabs:', text.substring(0, 50) + '...');
         
-        const response = await fetch('http://localhost:8000/speak', {
+        const response = await fetch(`${API_BASE_URL}/api/recommend`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
