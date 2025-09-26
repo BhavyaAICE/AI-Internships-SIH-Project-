@@ -133,8 +133,11 @@ def health_check():
     return {
         "status": "healthy",
         "elevenlabs_configured": bool(os.getenv("ELEVENLABS_API_KEY")),
-        "voice_id_configured": bool(os.getenv("ELEVEN_VOICE_ID"))
+        "voice_id_configured": bool(os.getenv("ELEVEN_VOICE_ID")),
+        "api_key_length": len(os.getenv("ELEVENLABS_API_KEY", "")) if os.getenv("ELEVENLABS_API_KEY") else 0,
+        "voice_id": os.getenv("ELEVEN_VOICE_ID", "not_set")
     }
+
 
 
 @app.post("/api/process-voice-input")

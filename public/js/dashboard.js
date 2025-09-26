@@ -645,64 +645,125 @@ function stopWidgetListening() {
 
 
 // Enhanced speakText function with ElevenLabs
+// Enhanced speakText function with proper ElevenLabs handling
 async function speakText(text) {
     try {
-        console.log('🗣️ Speaking with ElevenLabs:', text.substring(0, 50) + '...');
+        console.log('🗣️ Attempting ElevenLabs TTS:', text.substring(0, 50) + '...');
         
+        // First, check if the API endpoint is reachable
+        const healthResponse = await fetch(`${API_BASE_URL}/api/health`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (!healthResponse.ok) {
+            throw new Error('API health check failed');
+        }
+        
+        const healthData = await healthResponse.json();
+        console.log('🏥 API Health:', healthData);
+        
+        if (!healthData.elevenlabs_configured) {
+            throw new Error('ElevenLabs not configured on server');
+        }
+        
+        // Now attempt the TTS request
         const response = await fetch(`${API_BASE_URL}/api/speak`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'audio/mpeg'
+            },
             body: JSON.stringify({ text })
         });
-
         
+        console.log('📡 ElevenLabs API Response Status:', response.status);
+        console.log('📡 Response Headers:', Object.fromEntries(response.headers.entries()));
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            console.error('❌ ElevenLabs API Error Response:', errorText);
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        }
+        
+        // Check if response is actually audio
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('audio')) {
+            console.error('❌ Invalid content type:', contentType);
+            throw new Error('Invalid audio response from server');
         }
         
         const audioBlob = await response.blob();
+        console.log('🎵 Audio blob size:', audioBlob.size, 'bytes');
         
         if (audioBlob.size === 0) {
             throw new Error('Empty audio response from ElevenLabs');
         }
         
+        // Create and play audio
         const audioUrl = URL.createObjectURL(audioBlob);
         const audio = new Audio(audioUrl);
         
-        audio.onended = () => {
-            URL.revokeObjectURL(audioUrl);
-            console.log('✅ ElevenLabs audio completed');
-        };
-        
-        audio.onerror = (e) => {
-            console.error('❌ Audio playback error:', e);
-            URL.revokeObjectURL(audioUrl);
-            throw new Error('Audio playback failed');
-        };
-        
-        await audio.play();
-        console.log('✅ ElevenLabs audio playing');
+        // Return a promise that resolves when audio finishes
+        return new Promise((resolve, reject) => {
+            audio.onended = () => {
+                URL.revokeObjectURL(audioUrl);
+                console.log('✅ ElevenLabs audio completed successfully');
+                resolve();
+            };
+            
+            audio.onerror = (e) => {
+                console.error('❌ Audio playback error:', e);
+                URL.revokeObjectURL(audioUrl);
+                reject(new Error('Audio playback failed'));
+            };
+            
+            audio.oncanplaythrough = () => {
+                console.log('🎵 Audio ready to play');
+            };
+            
+            // Start playing
+            audio.play().then(() => {
+                console.log('✅ ElevenLabs audio started playing');
+            }).catch(reject);
+        });
         
     } catch (error) {
-        console.warn('❌ ElevenLabs failed, using browser TTS:', error);
+        console.warn('❌ ElevenLabs failed, using browser TTS fallback:', error.message);
         
         // Fallback to browser TTS
-        if ('speechSynthesis' in window) {
-            speechSynthesis.cancel();
-            
-            const utterance = new SpeechSynthesisUtterance(text);
-            const lang = getCurrentLanguage();
-            utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-US';
-            utterance.rate = 0.9;
-            utterance.pitch = 1.0;
-            utterance.volume = 1.0;
-            
-            speechSynthesis.speak(utterance);
-            console.log('🔄 Using browser TTS');
-        }
+        return new Promise((resolve) => {
+            if ('speechSynthesis' in window) {
+                // Cancel any ongoing speech
+                speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                const lang = getCurrentLanguage();
+                utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-US';
+                utterance.rate = 0.9;
+                utterance.pitch = 1.0;
+                utterance.volume = 1.0;
+                
+                utterance.onend = () => {
+                    console.log('🔄 Browser TTS completed');
+                    resolve();
+                };
+                
+                utterance.onerror = (e) => {
+                    console.error('❌ Browser TTS error:', e);
+                    resolve(); // Still resolve to prevent hanging
+                };
+                
+                speechSynthesis.speak(utterance);
+                console.log('🔄 Using browser TTS as fallback');
+            } else {
+                console.warn('❌ No TTS available');
+                resolve();
+            }
+        });
     }
 }
+
 
 async function handleUserMessage(userMessage) {
     try {
@@ -1130,5 +1191,35 @@ fetch('/api/recommend', {
   headers: { 'Content-Type': 'application/json' }
 }).then(res => res.json()).then(data => console.log(data));
 
+
+
+// Add this function for testing
+async function testElevenLabsAPI() {
+    try {
+        console.log('🧪 Testing ElevenLabs API...');
+        
+        const response = await fetch(`${API_BASE_URL}/api/speak`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: 'Testing ElevenLabs voice' })
+        });
+        
+        console.log('Test Response Status:', response.status);
+        console.log('Test Response Headers:', Object.fromEntries(response.headers.entries()));
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            console.log('Test Audio Blob Size:', blob.size);
+            return true;
+        } else {
+            const error = await response.text();
+            console.error('Test Error:', error);
+            return false;
+        }
+    } catch (error) {
+        console.error('Test Exception:', error);
+        return false;
+    }
+}
 
 
