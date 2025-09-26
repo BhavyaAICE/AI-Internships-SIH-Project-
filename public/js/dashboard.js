@@ -1,6 +1,6 @@
 // Dashboard functionality - Complete clean version
 
-const API_BASE_URL = "https://ai-internships-sih-project-nib5-ewc3eg1u5.vercel.app/api"; // Update with your actual API base URL
+const API_BASE_URL = "https://ai-internships-sih-project-nib5-qkstzkxak.vercel.app/"; // Update with your actual API base URL
 
 console.log('🚀 Dashboard script loading...');
 
@@ -465,7 +465,7 @@ async function finishConversation() {
     
     try {
         // Call recommendation API
-        const response = await fetch(`${API_BASE_URL}/api/recommend`, {
+        const response = await fetch(`/api/recommend`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -651,7 +651,7 @@ async function speakText(text) {
         console.log('🗣️ Attempting ElevenLabs TTS:', text.substring(0, 50) + '...');
         
         // First, check if the API endpoint is reachable
-        const healthResponse = await fetch(`${API_BASE_URL}/health`, {
+        const healthResponse = await fetch(`/api/health`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
         });
@@ -768,7 +768,7 @@ async function speakText(text) {
 async function handleUserMessage(userMessage) {
     try {
         // 1. Send candidate data to recommendation API
-        const recommendResponse = await fetch(`${API_BASE_URL}/api/recommend`, {
+        const recommendResponse = await fetch(`/api/recommend`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1198,7 +1198,7 @@ async function testElevenLabsAPI() {
     try {
         console.log('🧪 Testing ElevenLabs API...');
         
-        const response = await fetch(`${API_BASE_URL}/api/speak`, {
+        const response = await fetch(`/api/speak`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: 'Testing ElevenLabs voice' })

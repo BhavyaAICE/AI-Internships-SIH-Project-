@@ -13,12 +13,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-
-from fastapi.middleware.cors import CORSMiddleware
-
+# Improved CORS configuration
 origins = [
-    "https://ai-internships-sih-project-nib5-6fsxsx4kh.vercel.app",  # frontend domain
-    "http://localhost:3000",  # optional for local dev
+    "https://ai-internships-sih-project-nib5-qkstzkxak.vercel.app",  # Your frontend domain
+    "https://ai-internships-sih-project-nib5-ewc3eg1u5.vercel.app",  # Your backend domain
+    "https://ai-internships-sih-project-nib5-6fsxsx4kh.vercel.app",  # Previous domain
+    "http://localhost:3000",
+    "http://localhost:8000",
 ]
 
 app.add_middleware(
@@ -29,7 +30,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
+@app.middleware("http")
+async def add_cors_headers(request, call_next):
+    response = await call_next(request)
+    if request.method == "OPTIONS":
+        response.headers["Access-Control-Allow-Origin"] = request.headers.get("origin", "*")
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
 
 from .phase1_rule_based import load_internships, recommend
 
@@ -144,8 +153,8 @@ def health_check():
         "status": "healthy",
         "elevenlabs_configured": bool(os.getenv("ELEVENLABS_API_KEY")),
         "voice_id_configured": bool(os.getenv("ELEVEN_VOICE_ID")),
-        "api_key_length": len(os.getenv("ELEVENLABS_API_KEY", "")) if os.getenv("ELEVENLABS_API_KEY") else 0,
-        "voice_id": os.getenv("ELEVEN_VOICE_ID", "not_set")
+        "cors_enabled": True,
+        "allowed_origins": origins
     }
 
 
