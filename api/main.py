@@ -198,7 +198,7 @@ async def speak_text(request: SpeakRequest):
         }
     }
 
-    response = None  # ← Fix added here
+    response = None  # ✅ Critical fix: initialize response
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -230,12 +230,10 @@ async def speak_text(request: SpeakRequest):
         raise
 
     except Exception as e:
-        # This is where the bug was — accessing 'response' without checking if it exists
         logger.error(f"❌ Unexpected ElevenLabs error: {str(e)}")
         if response is not None:
             logger.error(f"Last response status: {response.status_code}, text: {response.text[:200]}")
         raise HTTPException(status_code=500, detail=f"Text-to-speech error: {str(e)}")
-
 
 # Voice input processing
 @app.post("/api/process-voice-input")
