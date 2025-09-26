@@ -1,4 +1,4 @@
-
+app = FastAPI(title="PM Internship Recommendation API")
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -17,7 +17,6 @@ from phase1_rule_based import load_internships, recommend
 ELEVEN_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
 ELEVEN_VOICE_ID = os.environ.get("ELEVEN_VOICE_ID", "alloy")
 
-app = FastAPI(title="PM Internship Recommendation API")
 
 app.add_middleware(
     CORSMiddleware,
