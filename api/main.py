@@ -27,9 +27,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# load internships from CSV once
-INTERNSHIPS = load_internships("internships.csv")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+csv_path = os.path.join(BASE_DIR, 'internships.csv')
 
+INTERNSHIPS = load_internships(csv_path)
 class Candidate(BaseModel):
     name: str = "Candidate"
     academic_background: str = ""
