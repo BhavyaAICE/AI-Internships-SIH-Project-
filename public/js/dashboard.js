@@ -651,7 +651,7 @@ async function speakText(text) {
         console.log('🗣️ Attempting ElevenLabs TTS:', text.substring(0, 50) + '...');
         
         // First, check if the API endpoint is reachable
-        const healthResponse = await fetch(`${API_BASE_URL}health`, {
+        const healthResponse = await fetch(`${API_BASE_URL}/health`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
         });
