@@ -11,16 +11,14 @@ from typing import List, Dict, Any
 import uvicorn
 import requests
 
-# import your recommender functions (ensure this filename matches)
 from api.phase1_rule_based import load_internships, recommend
 
-# Read ElevenLabs credentials (do NOT put real keys in git)
+# Read ElevenLabs credentials
 ELEVEN_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
 ELEVEN_VOICE_ID = os.environ.get("ELEVEN_VOICE_ID", "alloy")
 
 app = FastAPI(title="PM Internship Recommendation API")
 
-# Update origin list for production; for dev allow localhost ports you use
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -79,7 +77,7 @@ async def speak_text(request: SpeakRequest):
         
         data = {
             "text": text,
-            "model_id": "eleven_multilingual_v2",  # Supports multiple languages
+            "model_id": "eleven_multilingual_v2",  
             "voice_settings": {
                 "stability": 0.5,
                 "similarity_boost": 0.8,
@@ -130,12 +128,11 @@ def health_check():
         "voice_id_configured": bool(os.getenv("ELEVEN_VOICE_ID"))
     }
 
-    # Add to server.py - Voice input processing endpoint
+
 @app.post("/api/process-voice-input")
 def process_voice_input(audio_data: Dict[str, Any]):
     """Process voice input and return candidate profile"""
     try:
-        # Extract text from voice (if you're receiving audio)
         text = audio_data.get("text", "")
         
         # Parse the voice input to create candidate profile
@@ -146,7 +143,7 @@ def process_voice_input(audio_data: Dict[str, Any]):
         
         return JSONResponse({
             "candidate_profile": candidate_profile,
-            "recommendations": recommendations[:5],  # Top 5 as per problem statement
+            "recommendations": recommendations[:5],  
             "success": True
         })
     except Exception as e:
@@ -190,6 +187,3 @@ def parse_voice_to_profile(text: str) -> Dict:
     
     return profile
 
-if __name__ == "__main__":
-    print("Starting server with ElevenLabs TTS on http://localhost:8000")
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False)
