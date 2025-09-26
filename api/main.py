@@ -1,15 +1,16 @@
-app = FastAPI(title="PM Internship Recommendation API")
-from dotenv import load_dotenv
-load_dotenv()
-
-import os, json
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, JSONResponse
 from pydantic import BaseModel
 from typing import List, Dict, Any
-import uvicorn
+import os
 import requests
+
+
+app = FastAPI(title="PM Internship Recommendation API")
+from dotenv import load_dotenv
+load_dotenv()
+
 
 from phase1_rule_based import load_internships, recommend
 
