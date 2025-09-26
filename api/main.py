@@ -198,11 +198,12 @@ async def speak_text(request: SpeakRequest):
         }
     }
 
+    response = None  # ← Fix added here
+
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(url, json=data, headers=headers)
 
-        # Only access response after request succeeds
         if response.status_code != 200:
             logger.error(f"❌ ElevenLabs API error {response.status_code}: {response.text[:200]}")
             raise HTTPException(status_code=502, detail=f"ElevenLabs API error {response.status_code}")
@@ -224,11 +225,17 @@ async def speak_text(request: SpeakRequest):
     except httpx.RequestError as e:
         logger.error(f"❌ ElevenLabs request error: {str(e)}")
         raise HTTPException(status_code=502, detail="Cannot connect to ElevenLabs TTS service")
+
     except HTTPException:
         raise
+
     except Exception as e:
+        # This is where the bug was — accessing 'response' without checking if it exists
         logger.error(f"❌ Unexpected ElevenLabs error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Unexpected error in text-to-speech service")
+        if response is not None:
+            logger.error(f"Last response status: {response.status_code}, text: {response.text[:200]}")
+        raise HTTPException(status_code=500, detail=f"Text-to-speech error: {str(e)}")
+
 
 # Voice input processing
 @app.post("/api/process-voice-input")
