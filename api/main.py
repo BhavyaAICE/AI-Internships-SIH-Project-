@@ -11,7 +11,7 @@ from typing import List, Dict, Any
 import uvicorn
 import requests
 
-from api.phase1_rule_based import load_internships, recommend
+from phase1_rule_based import load_internships, recommend
 
 # Read ElevenLabs credentials
 ELEVEN_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
