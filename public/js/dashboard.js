@@ -649,13 +649,15 @@ async function speakText(text) {
     try {
         console.log('🗣️ Speaking with ElevenLabs:', text.substring(0, 50) + '...');
         
-        const response = await fetch(`${API_BASE_URL}/api/speak`, {
+        const response = await fetch(`${API_BASE_URL}/api/recommend`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text })
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text: text })
         });
 
-
+        
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
