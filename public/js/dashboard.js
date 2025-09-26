@@ -649,12 +649,10 @@ async function speakText(text) {
     try {
         console.log('🗣️ Speaking with ElevenLabs:', text.substring(0, 50) + '...');
         
-        const response = await fetch(`${API_BASE_URL}/api/recommend`, {
+        const response = await fetch(`${API_BASE_URL}/api/speak`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ text: text })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
         });
 
         
@@ -705,6 +703,48 @@ async function speakText(text) {
         }
     }
 }
+
+async function handleUserMessage(userMessage) {
+    try {
+        // 1. Send candidate data to recommendation API
+        const recommendResponse = await fetch(`${API_BASE_URL}/api/recommend`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: "Candidate",
+                skills: [userMessage],  // you can map real candidate data here
+                sector_interest: [],
+                location_preference: [],
+                prefers_remote: false,
+                is_fresher: true
+            })
+        });
+
+        const recommendData = await recommendResponse.json();
+        console.log("✅ Recommendations:", recommendData);
+
+        // Show recommendations in your UI
+        if (recommendData.recommendations && recommendData.recommendations.length > 0) {
+            displayRecommendations(recommendData.recommendations);
+        } else {
+            displayMessage("No recommendations found.");
+        }
+
+        // 2. Call ElevenLabs TTS to read the result
+        const textToSpeak = recommendData.recommendations.length > 0
+            ? `Here are some recommendations for you. ${recommendData.recommendations.map(r => r.title).join(", ")}`
+            : "Sorry, no recommendations found.";
+
+        await speakText(textToSpeak);
+
+    } catch (error) {
+        console.error("❌ Error handling user message:", error);
+        displayMessage("Something went wrong while fetching recommendations.");
+    }
+}
+
 
 // Load opportunities - MAIN FUNCTION
 function loadOpportunities(isPersonalized = false) {
