@@ -13,29 +13,28 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify your frontend domains
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 
 from .phase1_rule_based import load_internships, recommend
 
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 app.mount("/static", StaticFiles(directory="public"), name="static")
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+csv_path = os.path.join(BASE_DIR, 'internships.csv')
+INTERNSHIPS = load_internships(csv_path)
 
 # Read ElevenLabs credentials
 ELEVEN_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
 ELEVEN_VOICE_ID = os.environ.get("ELEVEN_VOICE_ID", "alloy")
 
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-csv_path = os.path.join(BASE_DIR, 'internships.csv')
 
 INTERNSHIPS = load_internships(csv_path)
 class Candidate(BaseModel):
