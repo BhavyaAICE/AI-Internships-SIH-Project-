@@ -173,6 +173,7 @@ def recommend_endpoint(candidate: Candidate, min_score: float = 0.0, remote_only
 @app.post("/api/speak")
 async def speak_text(request: SpeakRequest):
     text = request.text.strip()
+
     if not text:
         raise HTTPException(status_code=400, detail="Text is required and cannot be empty")
     if len(text) > 5000:
@@ -200,12 +201,16 @@ async def speak_text(request: SpeakRequest):
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(url, json=data, headers=headers)
+
+        # Only access response after request succeeds
         if response.status_code != 200:
             logger.error(f"❌ ElevenLabs API error {response.status_code}: {response.text[:200]}")
             raise HTTPException(status_code=502, detail=f"ElevenLabs API error {response.status_code}")
+
         audio_content = response.content
         if not audio_content:
             raise HTTPException(status_code=502, detail="Empty audio response from ElevenLabs")
+
         return Response(
             content=audio_content,
             media_type="audio/mpeg",
@@ -215,6 +220,7 @@ async def speak_text(request: SpeakRequest):
                 "Accept-Ranges": "bytes"
             }
         )
+
     except httpx.RequestError as e:
         logger.error(f"❌ ElevenLabs request error: {str(e)}")
         raise HTTPException(status_code=502, detail="Cannot connect to ElevenLabs TTS service")
