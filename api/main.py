@@ -124,8 +124,9 @@ async def speak_text(request: SpeakRequest):
 @app.get("/")
 def read_root():
     return {"message": "PM Internship API with ElevenLabs TTS is running!"}
-def main_page():
+def serve_frontend():
     return FileResponse("public/index.html")
+
 
 @app.get("/api/health")
 def health_check():

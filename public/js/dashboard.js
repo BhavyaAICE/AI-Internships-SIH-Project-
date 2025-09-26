@@ -1087,3 +1087,6 @@ fetch('/api/recommend', {
   body: JSON.stringify({ data: 'value' }),
   headers: { 'Content-Type': 'application/json' }
 }).then(res => res.json()).then(data => console.log(data));
+
+
+
