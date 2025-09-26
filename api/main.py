@@ -1,4 +1,4 @@
-# server.py
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -41,7 +41,7 @@ class Candidate(BaseModel):
     prefers_remote: bool = False
     is_fresher: bool = False
 
-@app.post("/recommend")
+@app.post("/api/recommend")
 def recommend_endpoint(candidate: Candidate, min_score: float = 0.0, remote_only: bool = False, fresher_only: bool = False):
     filters = {"remote_only": remote_only, "fresher_only": fresher_only}
     results = recommend(candidate.model_dump(), INTERNSHIPS, min_score=min_score, filters=filters)
@@ -51,7 +51,7 @@ def recommend_endpoint(candidate: Candidate, min_score: float = 0.0, remote_only
 class SpeakRequest(BaseModel):
     text: str
 
-@app.post("/speak")
+@app.post("/api/speak")
 async def speak_text(request: SpeakRequest):
     try:
         text = request.text
@@ -118,11 +118,11 @@ async def speak_text(request: SpeakRequest):
         print(f"❌ TTS Error: {e}")
         raise HTTPException(status_code=500, detail=f"Text-to-speech error: {str(e)}")
 
-@app.get("/")
+@app.get("/api/")
 def read_root():
     return {"message": "PM Internship API with ElevenLabs TTS is running!"}
 
-@app.get("/health")
+@app.get("/api/health")
 def health_check():
     return {
         "status": "healthy",
@@ -131,7 +131,7 @@ def health_check():
     }
 
     # Add to server.py - Voice input processing endpoint
-@app.post("/process-voice-input")
+@app.post("/api/process-voice-input")
 def process_voice_input(audio_data: Dict[str, Any]):
     """Process voice input and return candidate profile"""
     try:
