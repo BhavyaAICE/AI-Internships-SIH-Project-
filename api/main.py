@@ -15,12 +15,12 @@ load_dotenv()
 
 # Improved CORS configuration
 origins = [
-    "https://ai-internships-sih-project-nib5-qkstzkxak.vercel.app",  # Your frontend domain
-    "https://ai-internships-sih-project-nib5-ewc3eg1u5.vercel.app",  # Your backend domain
-    "https://ai-internships-sih-project-nib5-6fsxsx4kh.vercel.app",  # Previous domain
+    "https://ai-internships-sih-project-nib5-o2fmj4v1q.vercel.app",  # Your frontend
+    "https://ai-internships-sih-project-nib5-qkstzkxak.vercel.app",  # Your backend
     "http://localhost:3000",
     "http://localhost:8000",
 ]
+
 
 app.add_middleware(
     CORSMiddleware,

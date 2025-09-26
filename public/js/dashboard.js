@@ -1,6 +1,6 @@
 // Dashboard functionality - Complete clean version
 
-const API_BASE_URL = "https://ai-internships-sih-project-nib5-qkstzkxak.vercel.app/"; // Update with your actual API base URL
+const API_BASE_URL = "https://ai-internships-sih-project-nib5-qkstzkxak.vercel.app";
 
 console.log('🚀 Dashboard script loading...');
 
@@ -651,7 +651,7 @@ async function speakText(text) {
         console.log('🗣️ Attempting ElevenLabs TTS:', text.substring(0, 50) + '...');
         
         // First, check if the API endpoint is reachable
-        const healthResponse = await fetch(`/api/health`, {
+        const healthResponse = await fetch(`${API_BASE_URL}/api/health`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
         });
