@@ -95,10 +95,10 @@ async def speak_text(request: SpeakRequest):
         # Make the API call to ElevenLabs
         response = requests.post(url, json=data, headers=headers, timeout=30)
         
-        # This will automatically raise an exception for API errors (4xx or 5xx status codes)
+        # This will automatically raise an exception for API errors (like 401, 422, etc.)
         response.raise_for_status()
         
-        # If we get here, the request was successful
+        # If we get here, the request was successful (status code 2xx)
         print("✅ ElevenLabs TTS successful")
         return Response(
             content=response.content,
@@ -106,11 +106,12 @@ async def speak_text(request: SpeakRequest):
         )
 
     except requests.exceptions.Timeout:
+        # This handles a specific network timeout
         print("❌ ElevenLabs API timeout")
         raise HTTPException(status_code=504, detail="Text-to-speech service timeout")
 
     except requests.exceptions.HTTPError as e:
-        # This catches errors returned by the ElevenLabs API (e.g., invalid API key)
+        # This catches errors returned by the ElevenLabs API (like an invalid API key)
         # The 'response' object is safely available here as e.response
         print(f"❌ ElevenLabs API HTTP error: {e.response.status_code}")
         print(f"Response Body: {e.response.text}")
@@ -118,14 +119,16 @@ async def speak_text(request: SpeakRequest):
 
     except requests.exceptions.RequestException as e:
         # This catches fundamental network errors (DNS failure, connection refused, etc.)
-        # In this block, 'response' does not exist, and we don't try to access it.
+        # In this block, 'response' does NOT exist, and we don't try to access it.
         print(f"❌ ElevenLabs network request failed: {e}")
         raise HTTPException(status_code=502, detail="Text-to-speech service unavailable")
 
     except Exception as e:
-        # Catch any other unexpected errors
+        # A final catch-all for any other unexpected errors
         print(f"❌ An unexpected error occurred in TTS: {e}")
         raise HTTPException(status_code=500, detail="An unexpected text-to-speech error occurred.")
+    
+    
 @app.get("/")
 def read_root():
     return {"message": "PM Internship API with ElevenLabs TTS is running!"}
