@@ -61,77 +61,71 @@ def recommend_endpoint(candidate: Candidate, min_score: float = 0.0, remote_only
 class SpeakRequest(BaseModel):
     text: str
 
+# main.py
+
+# ... (your other imports and code)
+
 @app.post("/api/speak")
 async def speak_text(request: SpeakRequest):
+    text = request.text
+    if not text:
+        raise HTTPException(status_code=400, detail="Text is required")
+
+    api_key = os.getenv("ELEVENLABS_API_KEY")
+    voice_id = os.getenv("ELEVEN_VOICE_ID")
+
+    if not api_key or not voice_id:
+        raise HTTPException(status_code=500, detail="ElevenLabs credentials not configured")
+
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+    headers = {
+        "Accept": "audio/mpeg",
+        "Content-Type": "application/json",
+        "xi-api-key": api_key
+    }
+    data = {
+        "text": text,
+        "model_id": "eleven_multilingual_v2",
+        "voice_settings": {"stability": 0.5, "similarity_boost": 0.8}
+    }
+
     try:
-        text = request.text
+        print(f"🗣️ Requesting TTS from ElevenLabs for: {text[:50]}...")
         
-        if not text:
-            raise HTTPException(status_code=400, detail="Text is required")
-            
-        # Get API credentials from environment
-        api_key = os.getenv("ELEVENLABS_API_KEY")
-        voice_id = os.getenv("ELEVEN_VOICE_ID")
-        
-        if not api_key or not voice_id:
-            raise HTTPException(status_code=500, detail="ElevenLabs credentials not configured")
-        
-        print(f"🗣️ Speaking: {text[:50]}...")
-        
-        # ElevenLabs API call
-        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
-        
-        headers = {
-            "Accept": "audio/mpeg",
-            "Content-Type": "application/json",
-            "xi-api-key": api_key
-        }
-        
-        data = {
-            "text": text,
-            "model_id": "eleven_multilingual_v2",  
-            "voice_settings": {
-                "stability": 0.5,
-                "similarity_boost": 0.8,
-                "style": 0.2,
-                "use_speaker_boost": True
-            }
-        }
-        
+        # Make the API call to ElevenLabs
         response = requests.post(url, json=data, headers=headers, timeout=30)
-
+        
+        # This will automatically raise an exception for API errors (4xx or 5xx status codes)
         response.raise_for_status()
-
+        
+        # If we get here, the request was successful
         print("✅ ElevenLabs TTS successful")
         return Response(
             content=response.content,
-            media_type="audio/mpeg",
-            headers={
-                "Content-Disposition": "attachment; filename=speech.mp3",
-                "Cache-Control": "no-cache"
-            }
+            media_type="audio/mpeg"
         )
+
     except requests.exceptions.Timeout:
         print("❌ ElevenLabs API timeout")
         raise HTTPException(status_code=504, detail="Text-to-speech service timeout")
 
     except requests.exceptions.HTTPError as e:
-        # This catches errors returned by the ElevenLabs API (like 401, 422, etc.)
+        # This catches errors returned by the ElevenLabs API (e.g., invalid API key)
+        # The 'response' object is safely available here as e.response
         print(f"❌ ElevenLabs API HTTP error: {e.response.status_code}")
-        print(f"Response: {e.response.text}")
+        print(f"Response Body: {e.response.text}")
         raise HTTPException(status_code=502, detail=f"ElevenLabs API Error: {e.response.text}")
 
     except requests.exceptions.RequestException as e:
         # This catches fundamental network errors (DNS failure, connection refused, etc.)
-        # In this case, the `response` object does not exist.
+        # In this block, 'response' does not exist, and we don't try to access it.
         print(f"❌ ElevenLabs network request failed: {e}")
         raise HTTPException(status_code=502, detail="Text-to-speech service unavailable")
 
     except Exception as e:
         # Catch any other unexpected errors
         print(f"❌ An unexpected error occurred in TTS: {e}")
-        raise HTTPException(status_code=500, detail=f"An unexpected text-to-speech error occurred.")
-
+        raise HTTPException(status_code=500, detail="An unexpected text-to-speech error occurred.")
 @app.get("/")
 def read_root():
     return {"message": "PM Internship API with ElevenLabs TTS is running!"}
