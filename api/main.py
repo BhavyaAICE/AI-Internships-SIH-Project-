@@ -7,15 +7,17 @@ from typing import List, Dict, Any
 import os
 import requests
 
-
+# Create FastAPI app
 app = FastAPI(title="PM Internship Recommendation API")
+
+# Load environment variables
 from dotenv import load_dotenv
 load_dotenv()
 
-
+# Add CORS middleware FIRST
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify your frontend domains
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -35,15 +37,13 @@ app.mount("/static", StaticFiles(directory="public"), name="static")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 csv_path = os.path.join(BASE_DIR, 'internships.csv')
+
 INTERNSHIPS = load_internships(csv_path)
 
 # Read ElevenLabs credentials
 ELEVEN_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
 ELEVEN_VOICE_ID = os.environ.get("ELEVEN_VOICE_ID", "alloy")
 
-
-
-INTERNSHIPS = load_internships(csv_path)
 class Candidate(BaseModel):
     name: str = "Candidate"
     academic_background: str = ""
@@ -53,15 +53,20 @@ class Candidate(BaseModel):
     prefers_remote: bool = False
     is_fresher: bool = False
 
+class SpeakRequest(BaseModel):
+    text: str
+
 @app.post("/api/recommend")
 def recommend_endpoint(candidate: Candidate, min_score: float = 0.0, remote_only: bool = False, fresher_only: bool = False):
     filters = {"remote_only": remote_only, "fresher_only": fresher_only}
     results = recommend(candidate.model_dump(), INTERNSHIPS, min_score=min_score, filters=filters)
-    return JSONResponse({"count": len(results), "recommendations": results[:10]})
+    response = JSONResponse({"count": len(results), "recommendations": results[:10]})
+    return add_cors_headers(response)
 
-# Pydantic model for speak request
-class SpeakRequest(BaseModel):
-    text: str
+@app.options("/api/recommend")
+async def recommend_options():
+    response = Response()
+    return add_cors_headers(response)
 
 @app.post("/api/speak")
 async def speak_text(request: SpeakRequest):
@@ -70,23 +75,10 @@ async def speak_text(request: SpeakRequest):
         
         if not text:
             raise HTTPException(status_code=400, detail="Text is required")
-
-
-
+            
         # Get API credentials from environment
         api_key = os.getenv("ELEVENLABS_API_KEY")
         voice_id = os.getenv("ELEVEN_VOICE_ID")
-
-        if response.status_code == 200:
-            response_obj = Response(
-                content=response.content,
-                media_type="audio/mpeg",
-                headers={
-                    "Content-Disposition": "attachment; filename=speech.mp3",
-                    "Cache-Control": "no-cache"
-                }
-            )
-            return add_cors_headers(response_obj)        
         
         if not api_key or not voice_id:
             raise HTTPException(status_code=500, detail="ElevenLabs credentials not configured")
@@ -117,7 +109,7 @@ async def speak_text(request: SpeakRequest):
         
         if response.status_code == 200:
             print("✅ ElevenLabs TTS successful")
-            return Response(
+            response_obj = Response(
                 content=response.content,
                 media_type="audio/mpeg",
                 headers={
@@ -125,6 +117,7 @@ async def speak_text(request: SpeakRequest):
                     "Cache-Control": "no-cache"
                 }
             )
+            return add_cors_headers(response_obj)
         else:
             print(f"❌ ElevenLabs API error: {response.status_code}")
             print(f"Response: {response.text}")
@@ -142,26 +135,17 @@ async def speak_text(request: SpeakRequest):
     except Exception as e:
         print(f"❌ TTS Error: {e}")
         raise HTTPException(status_code=500, detail=f"Text-to-speech error: {str(e)}")
-    
-    except Exception as e:
-        response_obj = JSONResponse(
-            status_code=500, 
-            content={"detail": f"Text-to-speech error: {str(e)}"}
-        )
-        return add_cors_headers(response_obj)
 
 @app.options("/api/speak")
 async def speak_options():
     """Handle preflight requests"""
     response = Response()
-    return add_cors_headers(response)        
+    return add_cors_headers(response)
 
 @app.get("/")
 def read_root():
-    return {"message": "PM Internship API with ElevenLabs TTS is running!"}
-def serve_frontend():
-    return FileResponse("public/index.html")
-
+    response = JSONResponse({"message": "PM Internship API with ElevenLabs TTS is running!"})
+    return add_cors_headers(response)
 
 @app.get("/api/health")
 def health_check():
@@ -178,7 +162,6 @@ async def health_options():
     response = Response()
     return add_cors_headers(response)
 
-
 @app.post("/api/process-voice-input")
 def process_voice_input(audio_data: Dict[str, Any]):
     """Process voice input and return candidate profile"""
@@ -191,17 +174,22 @@ def process_voice_input(audio_data: Dict[str, Any]):
         # Get recommendations using your rule model
         recommendations = recommend(candidate_profile, INTERNSHIPS, min_score=20.0)
         
-        return JSONResponse({
+        response = JSONResponse({
             "candidate_profile": candidate_profile,
             "recommendations": recommendations[:5],  
             "success": True
         })
+        return add_cors_headers(response)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.options("/api/process-voice-input")
+async def process_voice_input_options():
+    response = Response()
+    return add_cors_headers(response)
+
 def parse_voice_to_profile(text: str) -> Dict:
     """Parse voice input to extract candidate information"""
-    # Simple keyword extraction - you can enhance this
     profile = {
         "name": "User",
         "academic_background": "",
@@ -236,4 +224,3 @@ def parse_voice_to_profile(text: str) -> Dict:
         profile["location_preference"].append("mumbai")
     
     return profile
-
