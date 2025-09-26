@@ -117,7 +117,7 @@ async def speak_text(request: SpeakRequest):
         print(f"❌ TTS Error: {e}")
         raise HTTPException(status_code=500, detail=f"Text-to-speech error: {str(e)}")
 
-@app.get("/api/")
+@app.get("/")
 def read_root():
     return {"message": "PM Internship API with ElevenLabs TTS is running!"}
 
