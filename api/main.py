@@ -14,13 +14,9 @@ load_dotenv()
 
 
 
+
+
 from .phase1_rule_based import load_internships, recommend
-
-app.mount("/static", StaticFiles(directory="public"), name="static")
-
-# Read ElevenLabs credentials
-ELEVEN_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
-ELEVEN_VOICE_ID = os.environ.get("ELEVEN_VOICE_ID", "alloy")
 
 
 app.add_middleware(
@@ -30,6 +26,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/static", StaticFiles(directory="public"), name="static")
+
+# Read ElevenLabs credentials
+ELEVEN_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
+ELEVEN_VOICE_ID = os.environ.get("ELEVEN_VOICE_ID", "alloy")
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 csv_path = os.path.join(BASE_DIR, 'internships.csv')
