@@ -14,31 +14,19 @@ load_dotenv()
 
 
 # Improved CORS configuration
-origins = [
-    "https://ai-internships-sih-project-nib5-o2fmj4v1q.vercel.app",  # Your frontend
-    "https://ai-internships-sih-project-nib5-qkstzkxak.vercel.app",  # Your backend
-    "http://localhost:3000",
-    "http://localhost:8000",
-]
 
+origins = [
+    "https://ai-internships-sih-project-nib5.vercel.app"
+    # Add more allowed origins if needed
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origin_regex=r"https://ai-internships-sih-project-nib5-.*\.vercel\.app", # Matches any deployment
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-@app.middleware("http")
-async def add_cors_headers(request, call_next):
-    response = await call_next(request)
-    if request.method == "OPTIONS":
-        response.headers["Access-Control-Allow-Origin"] = request.headers.get("origin", "*")
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-    return response
 
 from .phase1_rule_based import load_internships, recommend
 
