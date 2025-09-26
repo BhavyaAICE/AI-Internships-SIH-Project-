@@ -21,6 +21,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def add_cors_headers(response: Response):
+    """Add CORS headers to response"""
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
 
 from .phase1_rule_based import load_internships, recommend
 
@@ -63,10 +70,23 @@ async def speak_text(request: SpeakRequest):
         
         if not text:
             raise HTTPException(status_code=400, detail="Text is required")
-            
+
+
+
         # Get API credentials from environment
         api_key = os.getenv("ELEVENLABS_API_KEY")
         voice_id = os.getenv("ELEVEN_VOICE_ID")
+
+        if response.status_code == 200:
+            response_obj = Response(
+                content=response.content,
+                media_type="audio/mpeg",
+                headers={
+                    "Content-Disposition": "attachment; filename=speech.mp3",
+                    "Cache-Control": "no-cache"
+                }
+            )
+            return add_cors_headers(response_obj)        
         
         if not api_key or not voice_id:
             raise HTTPException(status_code=500, detail="ElevenLabs credentials not configured")
@@ -122,6 +142,19 @@ async def speak_text(request: SpeakRequest):
     except Exception as e:
         print(f"❌ TTS Error: {e}")
         raise HTTPException(status_code=500, detail=f"Text-to-speech error: {str(e)}")
+    
+    except Exception as e:
+        response_obj = JSONResponse(
+            status_code=500, 
+            content={"detail": f"Text-to-speech error: {str(e)}"}
+        )
+        return add_cors_headers(response_obj)
+
+@app.options("/api/speak")
+async def speak_options():
+    """Handle preflight requests"""
+    response = Response()
+    return add_cors_headers(response)        
 
 @app.get("/")
 def read_root():
@@ -132,14 +165,18 @@ def serve_frontend():
 
 @app.get("/api/health")
 def health_check():
-    return {
+    response = JSONResponse({
         "status": "healthy",
         "elevenlabs_configured": bool(os.getenv("ELEVENLABS_API_KEY")),
-        "voice_id_configured": bool(os.getenv("ELEVEN_VOICE_ID")),
-        "api_key_length": len(os.getenv("ELEVENLABS_API_KEY", "")) if os.getenv("ELEVENLABS_API_KEY") else 0,
-        "voice_id": os.getenv("ELEVEN_VOICE_ID", "not_set")
-    }
+        "voice_id_configured": bool(os.getenv("ELEVEN_VOICE_ID"))
+    })
+    return add_cors_headers(response)
 
+@app.options("/api/health")
+async def health_options():
+    """Handle preflight requests"""
+    response = Response()
+    return add_cors_headers(response)
 
 
 @app.post("/api/process-voice-input")
