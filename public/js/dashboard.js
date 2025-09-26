@@ -1,5 +1,7 @@
 // Dashboard functionality - Complete clean version
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+
+const API_BASE_URL = "https://ai-internships-sih-project-nib5-qkstzkxak.vercel.app";
 
 console.log('🚀 Dashboard script loading...');
 
@@ -464,7 +466,7 @@ async function finishConversation() {
     
     try {
         // Call recommendation API
-        const response = await fetch(`${API_BASE_URL}/api/recommend`, {
+        const response = await fetch(`/api/recommend`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -767,7 +769,7 @@ async function speakText(text) {
 async function handleUserMessage(userMessage) {
     try {
         // 1. Send candidate data to recommendation API
-        const recommendResponse = await fetch(`recommend/api/recommend`, {
+        const recommendResponse = await fetch(`${API_BASE_URL}/api/recommend`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
