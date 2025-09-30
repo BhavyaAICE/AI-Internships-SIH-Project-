@@ -1,7 +1,6 @@
-// Dashboard functionality - Complete clean version
+// Complete Dashboard JavaScript - Updated and Fixed Version
 
-
-const API_BASE_URL = "https://ai-internships-sih-project-nib5-qkstzkxak.vercel.app";
+const API_BASE_URL = "http://localhost:8000";
 
 console.log('🚀 Dashboard script loading...');
 
@@ -219,7 +218,6 @@ function toggleLanguage(lang) {
     document.dispatchEvent(new CustomEvent('languageChanged'));
 }
 
-
 // Initialize speech recognition
 function initSpeechRecognition() {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -232,13 +230,13 @@ function initSpeechRecognition() {
         const updateRecognitionLanguage = () => {
             const lang = getCurrentLanguage();
             recognition.lang = lang === 'hi' ? 'hi-IN' : 'en-US';
-            console.log(' Speech recognition initialized with language:', recognition.lang);
+            console.log('🎤 Speech recognition initialized with language:', recognition.lang);
         };
         
         updateRecognitionLanguage();
         
         recognition.onstart = function() {
-            console.log(' Speech recognition started');
+            console.log('🎤 Speech recognition started');
             const lang = getCurrentLanguage();
             const startMsg = lang === 'hi' ? 'बोलिए...' : 'Speak now...';
             showToast(startMsg, 'info');
@@ -246,7 +244,7 @@ function initSpeechRecognition() {
         
         recognition.onresult = function(event) {
             const transcript = event.results[0][0].transcript;
-            console.log(' Speech result:', transcript);
+            console.log('🎤 Speech result:', transcript);
             
             const input = document.getElementById('chat-widget-input');
             if (input) {
@@ -256,7 +254,7 @@ function initSpeechRecognition() {
         };
         
         recognition.onerror = function(event) {
-            console.error(' Speech recognition error:', event.error);
+            console.error('🎤 Speech recognition error:', event.error);
             stopWidgetListening();
             
             const lang = getCurrentLanguage();
@@ -280,7 +278,7 @@ function initSpeechRecognition() {
         };
         
         recognition.onend = function() {
-            console.log(' Speech recognition ended');
+            console.log('🎤 Speech recognition ended');
             stopWidgetListening();
         };
         
@@ -465,20 +463,32 @@ async function finishConversation() {
     speakText(processingMessage);
     
     try {
-        // Call recommendation API
-        const response = await fetch(`/api/recommend`, {
+        console.log('📊 Sending recommendation request with profile:', userProfile);
+        
+        const response = await fetch(`${API_BASE_URL}/api/recommend`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json'
             },
             body: JSON.stringify({
-                ...userProfile,
-                language: lang
-            })
+                name: userProfile.name || "User",
+                academic_background: userProfile.academic_background || "",
+                skills: userProfile.skills || [],
+                sector_interest: userProfile.sector_interest || [],
+                location_preference: userProfile.location_preference || [],
+                prefers_remote: userProfile.prefers_remote || false,
+                is_fresher: userProfile.is_fresher !== false
+            }),
+            signal: AbortSignal.timeout(15000)
         });
+        
+        console.log('📡 API Response Status:', response.status);
         
         if (response.ok) {
             const data = await response.json();
+            console.log('✅ API Response Data:', data);
+            
             if (data.recommendations && data.recommendations.length > 0) {
                 const successMessage = lang === 'hi'
                     ? `Bahut badhiya! Maine aapke liye ${data.recommendations.length} perfect matches dhund liye hain. Niche dekh sakte hain!`
@@ -487,66 +497,94 @@ async function finishConversation() {
                 addWidgetMessage(successMessage, 'assistant');
                 speakText(successMessage);
                 
-                // Update dashboard with recommendations
+                // ✅ ONLY update dashboard if we got REAL recommendations from API
                 updateDashboardWithRecommendations(data.recommendations);
                 
-                // Close chat after showing results
                 setTimeout(() => {
                     toggleChat();
                 }, 5000);
             } else {
+                // ❌ API worked but no recommendations - DON'T update dashboard
                 const fallbackMessage = lang === 'hi'
                     ? 'Specific matches nahi mile, lekin ye popular opportunities dekh sakte hain!'
                     : 'I couldn\'t find specific matches, but check out these popular opportunities below!';
                 
                 addWidgetMessage(fallbackMessage, 'assistant');
                 speakText(fallbackMessage);
+                
+                // Keep existing sample opportunities, don't update dashboard
+                setTimeout(() => {
+                    toggleChat();
+                }, 3000);
             }
         } else {
-            throw new Error('API request failed');
+            throw new Error(`API Error: ${response.status}`);
         }
+        
     } catch (error) {
-        console.error('Error:', error);
+        console.error('❌ Recommendation API Error:', error);
+        
         const lang = getCurrentLanguage();
-        const errorMessage = lang === 'hi'
-            ? 'Server se connect karne mein problem hai, lekin ye popular opportunities dekh sakte hain!'
-            : 'There was an issue connecting to our servers, but check out these popular opportunities below!';
-            
-        addWidgetMessage(errorMessage, 'assistant');
-        speakText(errorMessage);
+        let userMessage;
+        
+        if (error.name === 'AbortError') {
+            userMessage = lang === 'hi'
+                ? 'Server response slow hai, lekin ye popular opportunities dekh sakte hain!'
+                : 'Server response is slow, but check out these popular opportunities below!';
+        } else if (error.message.includes('Failed to fetch')) {
+            userMessage = lang === 'hi'
+                ? 'Server se connect nahi ho pa raha, lekin ye popular opportunities dekh sakte hain!'
+                : 'Cannot connect to server, but check out these popular opportunities below!';
+        } else {
+            userMessage = lang === 'hi'
+                ? 'Server mein problem hai, lekin ye popular opportunities dekh sakte hain!'
+                : 'There was a server issue, but check out these popular opportunities below!';
+        }
+        
+        addWidgetMessage(userMessage, 'assistant');
+        speakText(userMessage);
+        
+        // ❌ API failed - DON'T update dashboard, keep sample data
+        // The user can still see the original sample opportunities
+        
+        setTimeout(() => {
+            toggleChat();
+        }, 4000);
     }
 }
 
-// Update dashboard with personalized recommendations
 // Update dashboard with personalized recommendations - TOP 10 SORTED BY MATCH %
 function updateDashboardWithRecommendations(recommendations) {
-    console.log('Updating dashboard with personalized recommendations:', recommendations);
+    console.log('🎯 Updating dashboard with PERSONALIZED recommendations:', recommendations.length);
     
-    // Sort recommendations by match percentage in descending order
+    // ONLY proceed if we actually have recommendations
+    if (!recommendations || recommendations.length === 0) {
+        console.log('⚠️ No recommendations provided, keeping sample data');
+        return;
+    }
+    
+    // Sort recommendations by match percentage
     const sortedRecommendations = recommendations
         .map(rec => {
-            // Ensure each recommendation has a match_pct
             if (!rec.match_pct) {
-                rec.match_pct = Math.floor(Math.random() * 30) + 60; // 60-90%
+                rec.match_pct = Math.floor(Math.random() * 30) + 60;
             }
             return rec;
         })
-        .sort((a, b) => (b.match_pct || 0) - (a.match_pct || 0)) // Sort by match % descending
-        .slice(0, 10); // Take only top 10
+        .sort((a, b) => (b.match_pct || 0) - (a.match_pct || 0))
+        .slice(0, 10);
     
-    console.log('Top 10 sorted recommendations:', sortedRecommendations.map(r => `${r.title}: ${r.match_pct}%`));
-    
-    // Update the current opportunities with the top 10 sorted recommendations
+    // ✅ NOW update the global variables
     currentOpportunities = sortedRecommendations;
     displayedOpportunities = [];
     
-    // Update the title to show it's personalized
+    // Update titles
     const title = document.getElementById('opportunities-title');
     if (title) {
         const lang = getCurrentLanguage();
         title.textContent = lang === 'hi' 
-            ? 'Aapके लिए Top 10 Personalized Recommendations'
-            : 'Your Top 10 Personalized Recommendations';
+            ? 'आपके लिए Top Personalized Recommendations'
+            : 'Your Top Personalized Recommendations';
     }
     
     const subtitle = document.getElementById('opportunities-subtitle');
@@ -554,10 +592,10 @@ function updateDashboardWithRecommendations(recommendations) {
         const lang = getCurrentLanguage();
         subtitle.textContent = lang === 'hi'
             ? `सबसे अच्छे ${sortedRecommendations.length} internships जो आपके profile से perfectly match करते हैं`
-            : `Top ${sortedRecommendations.length} internships perfectly matching your profile - sorted by best match`;
+            : `Top ${sortedRecommendations.length} internships perfectly matching your profile`;
     }
     
-    // Clear and reload the grid with personalized flag
+    // Clear and reload grid
     const grid = document.getElementById('opportunities-grid');
     if (grid) {
         grid.innerHTML = '';
@@ -567,13 +605,14 @@ function updateDashboardWithRecommendations(recommendations) {
     // Show success message
     const lang = getCurrentLanguage();
     const message = lang === 'hi' 
-        ? `Top ${sortedRecommendations.length} best matches mil gaye!`
-        : `Found your top ${sortedRecommendations.length} best matches!`;
+        ? `Top ${sortedRecommendations.length} personalized matches mil gaye!`
+        : `Found your top ${sortedRecommendations.length} personalized matches!`;
     showToast(message, 'success');
     
     // Scroll to results
     setTimeout(() => {
-        const resultsSection = document.querySelector('.results-section');
+        const resultsSection = document.querySelector('.results-section') || 
+                             document.querySelector('.opportunities-section');
         if (resultsSection) {
             resultsSection.scrollIntoView({ 
                 behavior: 'smooth', 
@@ -621,6 +660,7 @@ function startWidgetListening() {
             console.error('🎤 Error starting recognition:', error);
             stopWidgetListening();
             
+            const lang = getCurrentLanguage();
             const errorMsg = lang === 'hi' 
                 ? 'Speech recognition शुरू नहीं हो सका।' 
                 : 'Could not start speech recognition.';
@@ -644,8 +684,6 @@ function stopWidgetListening() {
     }
 }
 
-
-// Enhanced speakText function with ElevenLabs
 // Enhanced speakText function with proper ElevenLabs handling
 async function speakText(text) {
     try {
@@ -655,7 +693,6 @@ async function speakText(text) {
         const healthResponse = await fetch(`${API_BASE_URL}/api/health`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
-            // Add timeout for health check to prevent hanging
             signal: AbortSignal.timeout(10000) // 10 second timeout
         });
         
@@ -671,12 +708,10 @@ async function speakText(text) {
             throw new Error('ElevenLabs API key not configured on server');
         }
         
-        // Check voice ID if available in health response
         if (healthData.hasOwnProperty('voice_id_configured') && !healthData.voice_id_configured) {
             throw new Error('ElevenLabs Voice ID not configured on server');
         }
         
-        // Check connection status if available in health response
         if (healthData.hasOwnProperty('elevenlabs_connection') && !healthData.elevenlabs_connection) {
             throw new Error('ElevenLabs API connection failed on server');
         }
@@ -689,7 +724,6 @@ async function speakText(text) {
                 'Accept': 'audio/mpeg'
             },
             body: JSON.stringify({ text }),
-            // Extended timeout for TTS request (ElevenLabs can be slow)
             signal: AbortSignal.timeout(45000) // 45 second timeout
         });
         
@@ -701,7 +735,6 @@ async function speakText(text) {
             const contentType = response.headers.get('content-type');
             
             try {
-                // Try to parse error response properly
                 if (contentType && contentType.includes('application/json')) {
                     const errorData = await response.json();
                     errorText = errorData.detail || errorData.message || JSON.stringify(errorData);
@@ -714,7 +747,6 @@ async function speakText(text) {
             
             console.error('❌ ElevenLabs API Error Response:', errorText);
             
-            // Provide user-friendly error messages based on status codes
             let friendlyError;
             switch (response.status) {
                 case 401:
@@ -754,7 +786,6 @@ async function speakText(text) {
             throw new Error('Empty audio response from ElevenLabs');
         }
         
-        // Warn about unusually small audio responses
         if (audioBlob.size < 1000) {
             console.warn('⚠️ Unusually small audio response:', audioBlob.size, 'bytes - may indicate an error');
         }
@@ -763,15 +794,12 @@ async function speakText(text) {
         const audioUrl = URL.createObjectURL(audioBlob);
         const audio = new Audio(audioUrl);
         
-        // Set audio properties for better playback
         audio.preload = 'auto';
         audio.volume = 1.0;
         
-        // Return a promise that resolves when audio finishes
         return new Promise((resolve, reject) => {
             let isResolved = false;
             
-            // Safe cleanup function to prevent memory leaks
             const cleanup = () => {
                 if (!isResolved) {
                     URL.revokeObjectURL(audioUrl);
@@ -798,12 +826,6 @@ async function speakText(text) {
             
             audio.onerror = (e) => {
                 console.error('❌ Audio playback error:', e);
-                console.error('Audio error details:', {
-                    error: e.error,
-                    message: e.message,
-                    audioReadyState: audio.readyState,
-                    audioNetworkState: audio.networkState
-                });
                 safeReject(new Error('Audio playback failed'));
             };
             
@@ -811,7 +833,6 @@ async function speakText(text) {
                 console.log('🎵 Audio ready to play');
             };
             
-            // Additional audio event listeners for better debugging
             audio.onloadstart = () => {
                 console.log('🎵 Audio loading started');
             };
@@ -820,28 +841,24 @@ async function speakText(text) {
                 console.log('🎵 Audio data loaded');
             };
             
-            // Add safety timeout to prevent hanging (60 seconds max)
             const playbackTimeout = setTimeout(() => {
                 console.warn('⏰ Audio playback timeout - forcing completion');
                 audio.pause();
                 safeResolve();
             }, 60000);
             
-            // Clear timeout when audio ends normally
             const originalOnended = audio.onended;
             audio.onended = () => {
                 clearTimeout(playbackTimeout);
                 originalOnended();
             };
             
-            // Start playing
             audio.play().then(() => {
                 console.log('✅ ElevenLabs audio started playing');
             }).catch((playError) => {
                 console.error('❌ Audio play() failed:', playError);
                 clearTimeout(playbackTimeout);
                 
-                // Handle specific play() errors
                 if (playError.name === 'NotAllowedError') {
                     safeReject(new Error('Audio playback blocked - user interaction required'));
                 } else if (playError.name === 'NotSupportedError') {
@@ -853,23 +870,21 @@ async function speakText(text) {
         });
         
     } catch (error) {
-        // Enhanced error logging for debugging
         console.warn('❌ ElevenLabs failed, using browser TTS fallback:', error.message);
         console.warn('Error details:', {
             name: error.name,
             message: error.message,
-            stack: error.stack?.split('\n')[0] // Just first line of stack
+            stack: error.stack?.split('\n')[0]
         });
         
-        // Fallback to browser TTS with all your original features
+        // Fallback to browser TTS
         return new Promise((resolve) => {
             if ('speechSynthesis' in window) {
                 try {
-                    // Cancel any ongoing speech
                     speechSynthesis.cancel();
                     
                     const utterance = new SpeechSynthesisUtterance(text);
-                    const lang = getCurrentLanguage(); // Your language detection function
+                    const lang = getCurrentLanguage();
                     utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-US';
                     utterance.rate = 0.9;
                     utterance.pitch = 1.0;
@@ -889,16 +904,14 @@ async function speakText(text) {
                         console.error('❌ Browser TTS error:', e);
                         if (!isCompleted) {
                             isCompleted = true;
-                            resolve(); // Still resolve to prevent hanging
+                            resolve();
                         }
                     };
                     
-                    // Add onstart event for better tracking
                     utterance.onstart = () => {
                         console.log('🔄 Browser TTS started');
                     };
                     
-                    // Safety timeout for browser TTS
                     setTimeout(() => {
                         if (!isCompleted) {
                             console.warn('⏰ Browser TTS timeout - forcing completion');
@@ -906,14 +919,14 @@ async function speakText(text) {
                             isCompleted = true;
                             resolve();
                         }
-                    }, 30000); // 30 seconds timeout
+                    }, 30000);
                     
                     speechSynthesis.speak(utterance);
                     console.log('🔄 Using browser TTS as fallback');
                     
                 } catch (ttsError) {
                     console.error('❌ Browser TTS setup failed:', ttsError);
-                    resolve(); // Still resolve to prevent hanging
+                    resolve();
                 }
             } else {
                 console.warn('❌ No TTS available (speechSynthesis not supported)');
@@ -922,50 +935,6 @@ async function speakText(text) {
         });
     }
 }
-
-
-
-async function handleUserMessage(userMessage) {
-    try {
-        // 1. Send candidate data to recommendation API
-        const recommendResponse = await fetch(`${API_BASE_URL}/api/recommend`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                name: "Candidate",
-                skills: [userMessage],  // you can map real candidate data here
-                sector_interest: [],
-                location_preference: [],
-                prefers_remote: false,
-                is_fresher: true
-            })
-        });
-
-        const recommendData = await recommendResponse.json();
-        console.log("✅ Recommendations:", recommendData);
-
-        // Show recommendations in your UI
-        if (recommendData.recommendations && recommendData.recommendations.length > 0) {
-            displayRecommendations(recommendData.recommendations);
-        } else {
-            displayMessage("No recommendations found.");
-        }
-
-        // 2. Call ElevenLabs TTS to read the result
-        const textToSpeak = recommendData.recommendations.length > 0
-            ? `Here are some recommendations for you. ${recommendData.recommendations.map(r => r.title).join(", ")}`
-            : "Sorry, no recommendations found.";
-
-        await speakText(textToSpeak);
-
-    } catch (error) {
-        console.error("❌ Error handling user message:", error);
-        displayMessage("Something went wrong while fetching recommendations.");
-    }
-}
-
 
 // Load opportunities - MAIN FUNCTION
 function loadOpportunities(isPersonalized = false) {
@@ -980,12 +949,10 @@ function loadOpportunities(isPersonalized = false) {
         return;
     }
     
-    // Hide loading state
     if (loadingState) {
         loadingState.style.display = 'none';
     }
     
-    // Update results count with proper language
     if (resultsCount) {
         const lang = getCurrentLanguage();
         let countText;
@@ -1003,11 +970,9 @@ function loadOpportunities(isPersonalized = false) {
         resultsCount.textContent = countText;
     }
     
-    // Clear and show grid
     grid.innerHTML = '';
     grid.style.display = 'grid';
     
-    // Create cards - IMPORTANT: Pass isPersonalized flag and rank
     currentOpportunities.forEach((opportunity, index) => {
         const card = createOpportunityCard(opportunity, isPersonalized, index + 1);
         grid.appendChild(card);
@@ -1024,7 +989,6 @@ function createOpportunityCard(opportunity, isPersonalized = false, rank = null)
     card.setAttribute('role', 'article');
     card.setAttribute('aria-labelledby', `title-${opportunity.id}`);
     
-    // Add ranking class for personalized cards
     if (isPersonalized && rank) {
         card.classList.add('ranked-card');
         if (rank <= 3) {
@@ -1039,7 +1003,6 @@ function createOpportunityCard(opportunity, isPersonalized = false, rank = null)
     const description = opportunity.description || 'Details not available';
     const skills = opportunity.required_skills || [];
     
-    // ONLY show match info for personalized recommendations
     const matchScore = isPersonalized ? (opportunity.match_pct || Math.floor(Math.random() * 30) + 60) : null;
     const matchReasons = isPersonalized ? (opportunity.explanations || [
         'Skills matched',
@@ -1123,7 +1086,6 @@ function createOpportunityCard(opportunity, isPersonalized = false, rank = null)
     return card;
 }
 
-
 // Placeholder functions
 function applyToOpportunity(id) {
     console.log('📝 Apply clicked for ID:', id);
@@ -1135,7 +1097,6 @@ function applyToOpportunity(id) {
     
     showToast(message, 'success');
     
-    // Store application in localStorage
     const applications = JSON.parse(localStorage.getItem('applications') || '[]');
     applications.push({
         opportunityId: id,
@@ -1175,7 +1136,6 @@ function toggleBookmark(id) {
 
 // Show toast notification
 function showToast(message, type = 'info') {
-    // Remove existing toasts
     const existingToasts = document.querySelectorAll('.toast');
     existingToasts.forEach(toast => toast.remove());
     
@@ -1206,7 +1166,6 @@ function showToast(message, type = 'info') {
     toast.textContent = message;
     document.body.appendChild(toast);
     
-    // Auto remove after 3 seconds
     setTimeout(() => {
         if (document.body.contains(toast)) {
             toast.style.animation = 'slideInRight 0.3s ease reverse';
@@ -1303,12 +1262,10 @@ document.head.appendChild(style);
 
 console.log('✅ Dashboard script loaded');
 
-
 // Update UI language function
 function updateUILanguage(lang) {
     console.log('🔄 Updating UI language to:', lang);
     
-    // Update results count text
     const resultsCount = document.getElementById('results-count');
     if (resultsCount) {
         const total = currentOpportunities.length;
@@ -1327,7 +1284,6 @@ function updateUILanguage(lang) {
         resultsCount.textContent = countText;
     }
     
-    // Update page title if needed
     const pageTitle = document.getElementById('opportunities-title');
     if (pageTitle && pageTitle.textContent.includes('Personalized')) {
         pageTitle.textContent = lang === 'hi'
@@ -1335,7 +1291,6 @@ function updateUILanguage(lang) {
             : 'Your Top 10 Personalized Recommendations';
     }
     
-    // Update subtitle if needed
     const subtitle = document.getElementById('opportunities-subtitle');
     if (subtitle && subtitle.textContent.includes('matching')) {
         const total = currentOpportunities.length;
@@ -1345,15 +1300,7 @@ function updateUILanguage(lang) {
     }
 }
 
-fetch('/api/recommend', {
-  method: 'POST',
-  body: JSON.stringify({ data: 'value' }),
-  headers: { 'Content-Type': 'application/json' }
-}).then(res => res.json()).then(data => console.log(data));
-
-
-
-// Add this function for testing
+// Test function for ElevenLabs
 async function testElevenLabsAPI() {
     try {
         console.log('🧪 Testing ElevenLabs API...');
@@ -1382,4 +1329,27 @@ async function testElevenLabsAPI() {
     }
 }
 
-
+// ALSO ADD: Restore original sample data function
+function restoreOriginalOpportunities() {
+    console.log('🔄 Restoring original sample opportunities');
+    
+    currentOpportunities = [...sampleOpportunities]; // Copy sample data
+    displayedOpportunities = [];
+    
+    // Reset titles
+    const title = document.getElementById('opportunities-title');
+    if (title) {
+        const lang = getCurrentLanguage();
+        title.textContent = lang === 'hi' 
+            ? 'Popular Government Internship Opportunities'
+            : 'Popular Government Internship Opportunities';
+    }
+    
+        const subtitle = document.getElementById('opportunities-subtitle');
+        if (subtitle) {
+            const lang = getCurrentLanguage();
+            subtitle.textContent = lang === 'hi'
+                ? 'सरकारी departments में internship के अवसर'
+                : 'Internship opportunities in government departments';
+        }
+    }
